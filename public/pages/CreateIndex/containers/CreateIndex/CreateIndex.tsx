@@ -22,6 +22,7 @@ interface CreateIndexProps extends RouteComponentProps<{ index?: string; mode?: 
 
 interface CreateIndexState {
   dataSourceId: string;
+  dataSourceLabel: string;
 }
 
 export default class CreateIndex extends Component<CreateIndexProps, CreateIndexState> {
@@ -29,9 +30,10 @@ export default class CreateIndex extends Component<CreateIndexProps, CreateIndex
 
   constructor(props) {
     super(props);
-    const { dataSourceId } = getURLQueryParams(this.props.location);
+    const { dataSourceId, dataSourceLabel } = getURLQueryParams(this.props.location);
     this.state = {
       dataSourceId,
+      dataSourceLabel,
     };
   }
 
@@ -59,7 +61,7 @@ export default class CreateIndex extends Component<CreateIndexProps, CreateIndex
   render() {
     const isEdit = this.isEdit;
 
-    console.log("data source id in createIndex is ", this.state.dataSourceId);
+    console.log("data source id in createIndex is ", this.state.dataSourceId, this.state.dataSourceLabel);
 
     return (
       <>
@@ -69,6 +71,17 @@ export default class CreateIndex extends Component<CreateIndexProps, CreateIndex
           showDataSourcePicker={true}
           disableDataSourcePicker={true}
           notifications={this.context.notifications.toasts}
+          defaultOption={(() => {
+            if (this.state.dataSourceId && this.state.dataSourceId !== '') {
+              const y = [{
+                id: this.state.dataSourceId,
+                label: this.state.dataSourceLabel,
+              }];
+              console.log('state is ', y);
+              return y;
+            }
+            return undefined;
+          })()}
         />
         <div style={{ padding: "0px 50px" }}>
           <EuiTitle size="l">

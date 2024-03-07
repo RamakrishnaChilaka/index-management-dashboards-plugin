@@ -20,4 +20,5 @@ export interface IndicesQueryParams {
   sortDirection: Direction;
   showDataStreams: boolean;
   dataSourceId?: string;
+  dataSourceLabel?: string;
 }

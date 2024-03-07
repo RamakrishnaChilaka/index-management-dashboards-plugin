@@ -259,6 +259,17 @@ export default function IndexDetail(props: IndexDetailModalProps) {
         notifications={coreService?.notifications.toasts}
         showDataSourcePicker={true}
         disableDataSourcePicker={true}
+        defaultOption={(() => {
+          if (dataSourceId && dataSourceId !== '') {
+            const y = [{
+              id: dataSourceId,
+              label: dataSourceLabel,
+            }];
+            console.log('state is ', y);
+            return y;
+          }
+          return undefined;
+        })()}
       />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <EuiTitle size="m">

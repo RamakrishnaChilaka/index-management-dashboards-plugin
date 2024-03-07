@@ -78,9 +78,11 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
       sortDirection,
       showDataStreams,
       dataSourceId = '',
-      dataSourceLabel = ''
-    } = getURLQueryParams(this.props.location);
-    console.log("this props location in indices ", this.props.location);
+      dataSourceLabel = '',
+    } = getURLQueryParams(
+      this.props.location,
+    );
+    console.log('this props location in indices ', this.props.location);
     this.state = {
       totalIndices: 0,
       from,
@@ -126,14 +128,14 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
   }
 
   static getQueryObjectFromState({
-    from,
-    size,
-    search,
-    sortField,
-    sortDirection,
-    showDataStreams,
-    dataSourceId,
-  }: IndicesState): IndicesQueryParams {
+                                   from,
+                                   size,
+                                   search,
+                                   sortField,
+                                   sortDirection,
+                                   showDataStreams,
+                                   dataSourceId,
+                                 }: IndicesState): IndicesQueryParams {
     return { from, size, search, sortField, sortDirection, showDataStreams, dataSourceId };
   }
 
@@ -142,7 +144,7 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
     try {
       const { indexService, history } = this.props;
       const queryObject = Indices.getQueryObjectFromState(this.state);
-      const queryParamsString = queryString.stringify(queryObject);
+      const queryParamsString = queryString.stringify({ ...queryObject, dataSourceLabel: this.state.dataSourceLabel });
       history.replace({ ...this.props.location, search: queryParamsString });
 
       const getIndicesResponse = await indexService.getIndices({
@@ -266,20 +268,23 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
           setMenuMountPoint={this.props.setActionMenu}
           showDataSourcePicker={true}
           dataSourceCallBackFunc={(dataSourceId: string, dataSourceLabel: string) => {
-            console.log("data source id is ", dataSourceId, dataSourceLabel);
+            console.log('data source id is ', dataSourceId, dataSourceLabel);
             this.setState({ dataSourceId, dataSourceLabel });
           }}
           disableDataSourcePicker={false}
           notifications={this.context.notifications.toasts}
           savedObjects={this.props.savedObjects}
-        // defaultOption={(() => {
-        //   if (this.state.dataSourceId && this.state.dataSourceId != "") {
-        //     return {
-        //       id: this.state.dataSourceId
-        //     }
-        //   }
-        //   return undefined;
-        // })()}
+          defaultOption={(() => {
+            if (this.state.dataSourceId && this.state.dataSourceId !== '') {
+              const y = [{
+                id: this.state.dataSourceId,
+                label: this.state.dataSourceLabel,
+              }];
+              console.log('state is ', y);
+              return y;
+            }
+            return undefined;
+          })()}
         />
         <ContentPanel
           actions={
@@ -311,7 +316,7 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
                   buttonProps: {
                     fill: true,
                     onClick: () => {
-                      this.props.history.push(`${ROUTES.CREATE_INDEX}?dataSourceId=${this.state.dataSourceId}`);
+                      this.props.history.push(`${ROUTES.CREATE_INDEX}?dataSourceId=${this.state.dataSourceId}&dataSourceLabel=${this.state.dataSourceLabel}`);
                     },
                   },
                 },
@@ -337,7 +342,7 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
             columns={indicesColumns(isDataStreamColumnVisible, {
               history,
               dataSourceId: this.state.dataSourceId,
-              dataSourceLabel: this.state.dataSourceLabel
+              dataSourceLabel: this.state.dataSourceLabel,
             })}
             loading={this.state.loadingIndices}
             isSelectable={true}
@@ -345,7 +350,7 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
             items={indices}
             noItemsMessage={
               <IndexEmptyPrompt filterIsApplied={filterIsApplied} loading={loadingIndices}
-                resetFilters={this.resetFilters} />
+                                resetFilters={this.resetFilters} />
             }
             onChange={this.onTableChange}
             pagination={pagination}
