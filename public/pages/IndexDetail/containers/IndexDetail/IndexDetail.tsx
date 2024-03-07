@@ -30,8 +30,13 @@ import { Modal } from "../../../../components/Modal";
 import { IFinalDetail } from "./interface";
 import { OVERVIEW_DISPLAY_INFO } from "./constants";
 import { EVENT_MAP, destroyListener, listenEvent } from "../../../../JobHandler";
+import { useLocation } from "react-router";
+import { MountPoint } from "opensearch-dashboards/public";
+import { TopNavMenu } from '../../../../../../../src/plugins/navigation/public';
 
-export interface IndexDetailModalProps extends RouteComponentProps<{ index: string }> {}
+export interface IndexDetailModalProps extends RouteComponentProps<{ index: string }> {
+  setActionMenu: (menuMount: MountPoint | undefined) => void
+}
 
 export default function IndexDetail(props: IndexDetailModalProps) {
   const { index } = props.match.params;
@@ -51,12 +56,19 @@ export default function IndexDetail(props: IndexDetailModalProps) {
   }, [record, detail]);
   const services = useContext(ServicesContext) as BrowserServices;
 
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const dataSourceId = params.get('dataSourceId');
+  const dataSourceLabel = params.get("dataSourceLabel");
+  console.log(`data source id: ${dataSourceId}, data source label: ${dataSourceLabel}`)
+
   const fetchIndicesDetail = () =>
     services.commonService
       .apiCaller<Record<string, IndexItem>>({
         endpoint: "indices.get",
         data: {
           index,
+          dataSourceId,
         },
       })
       .then((res) => {
@@ -70,6 +82,7 @@ export default function IndexDetail(props: IndexDetailModalProps) {
         };
       })
       .then((res) => {
+        console.log("res1 is ", res);
         if (res && res.ok) {
           setDetail(res.response);
         } else {
@@ -82,6 +95,7 @@ export default function IndexDetail(props: IndexDetailModalProps) {
 
   const fetchCatIndexDetail = async (params: { showDataStreams: "true" | "false" }) => {
     const result = await services.indexService.getIndices({
+      dataSourceId: dataSourceId,
       terms: index,
       from: 0,
       size: 10,
@@ -93,6 +107,7 @@ export default function IndexDetail(props: IndexDetailModalProps) {
     });
     if (result.ok) {
       const findItem = result.response.indices.find((item) => item.index === index);
+      console.log("result is ", result, findItem)
       if (findItem) {
         setRecord(findItem);
       } else {
@@ -146,7 +161,7 @@ export default function IndexDetail(props: IndexDetailModalProps) {
             <EuiSpacer />
             <ContentPanel title="Index settings" titleSize="s">
               <EuiSpacer size="s" />
-              <IndexFormWrapper {...indexFormReadonlyCommonProps} key={IndicesUpdateMode.settings} mode={IndicesUpdateMode.settings} />
+              <IndexFormWrapper {...indexFormReadonlyCommonProps} key={IndicesUpdateMode.settings} mode={IndicesUpdateMode.settings} dataSourceId={dataSourceId} />
             </ContentPanel>
           </>
         ),
@@ -188,7 +203,7 @@ export default function IndexDetail(props: IndexDetailModalProps) {
               }
             >
               <EuiSpacer size="s" />
-              <IndexFormWrapper {...indexFormReadonlyCommonProps} key={IndicesUpdateMode.mappings} mode={IndicesUpdateMode.mappings} />
+              <IndexFormWrapper {...indexFormReadonlyCommonProps} key={IndicesUpdateMode.mappings} mode={IndicesUpdateMode.mappings} dataSourceId={dataSourceId} />
             </ContentPanel>
           </>
         ),
@@ -202,7 +217,7 @@ export default function IndexDetail(props: IndexDetailModalProps) {
             <EuiSpacer />
             <ContentPanel title="Index alias" titleSize="s">
               <EuiSpacer size="s" />
-              <IndexFormWrapper {...indexFormReadonlyCommonProps} key={IndicesUpdateMode.alias} mode={IndicesUpdateMode.alias} />
+              <IndexFormWrapper {...indexFormReadonlyCommonProps} key={IndicesUpdateMode.alias} mode={IndicesUpdateMode.alias} dataSourceId={dataSourceId} />
             </ContentPanel>
           </>
         ),
@@ -238,6 +253,13 @@ export default function IndexDetail(props: IndexDetailModalProps) {
 
   return (
     <>
+      <TopNavMenu
+        appName={'test'}
+        setMenuMountPoint={props.setActionMenu}
+        notifications={coreService?.notifications.toasts}
+        showDataSourcePicker={true}
+        disableDataSourcePicker={true}
+      />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <EuiTitle size="m">
           <span>{index}</span>
@@ -248,7 +270,7 @@ export default function IndexDetail(props: IndexDetailModalProps) {
           onDelete={() => props.history.replace(ROUTES.INDICES)}
           onClose={refreshDetails}
           onShrink={() => props.history.replace(ROUTES.INDICES)}
-          getIndices={async () => {}}
+          getIndices={async () => { }}
         />
       </div>
       <EuiSpacer />

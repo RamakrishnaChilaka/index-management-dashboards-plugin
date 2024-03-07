@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { Component } from "react";
-import _ from "lodash";
-import { RouteComponentProps } from "react-router-dom";
-import queryString from "query-string";
+import React, { Component, useState } from 'react';
+import _ from 'lodash';
+import { RouteComponentProps } from 'react-router-dom';
+import queryString from 'query-string';
 import {
   EuiBasicTable,
   EuiHorizontalRule,
@@ -20,27 +20,32 @@ import {
   ArgsWithError,
   ArgsWithQuery,
   Query,
-} from "@elastic/eui";
-import { ContentPanel, ContentPanelActions } from "../../../../components/ContentPanel";
-import IndexControls from "../../components/IndexControls";
-import IndexEmptyPrompt from "../../components/IndexEmptyPrompt";
-import { DEFAULT_PAGE_SIZE_OPTIONS, DEFAULT_QUERY_PARAMS, indicesColumns } from "../../utils/constants";
-import IndexService from "../../../../services/IndexService";
-import CommonService from "../../../../services/CommonService";
-import { DataStream, ManagedCatIndex } from "../../../../../server/models/interfaces";
-import { getURLQueryParams } from "../../utils/helpers";
-import { IndicesQueryParams } from "../../models/interfaces";
-import { BREADCRUMBS, ROUTES } from "../../../../utils/constants";
-import { getErrorMessage } from "../../../../utils/helpers";
-import { CoreServicesContext } from "../../../../components/core_services";
-import { SECURITY_EXCEPTION_PREFIX } from "../../../../../server/utils/constants";
-import IndicesActions from "../IndicesActions";
-import { destroyListener, EVENT_MAP, listenEvent } from "../../../../JobHandler";
-import "./index.scss";
+} from '@elastic/eui';
+import { SavedObjectsClientContract } from 'opensearch-dashboards/server';
+import { MountPoint } from 'opensearch-dashboards/public';
+import { ContentPanel, ContentPanelActions } from '../../../../components/ContentPanel';
+import IndexControls from '../../components/IndexControls';
+import IndexEmptyPrompt from '../../components/IndexEmptyPrompt';
+import { DEFAULT_PAGE_SIZE_OPTIONS, DEFAULT_QUERY_PARAMS, indicesColumns } from '../../utils/constants';
+import IndexService from '../../../../services/IndexService';
+import CommonService from '../../../../services/CommonService';
+import { DataStream, ManagedCatIndex } from '../../../../../server/models/interfaces';
+import { getURLQueryParams } from '../../utils/helpers';
+import { IndicesQueryParams } from '../../models/interfaces';
+import { BREADCRUMBS, ROUTES } from '../../../../utils/constants';
+import { getErrorMessage } from '../../../../utils/helpers';
+import { CoreServicesContext } from '../../../../components/core_services';
+import { SECURITY_EXCEPTION_PREFIX } from '../../../../../server/utils/constants';
+import IndicesActions from '../IndicesActions';
+import { destroyListener, EVENT_MAP, listenEvent } from '../../../../JobHandler';
+import './index.scss';
+import { TopNavMenu } from '../../../../../../../src/plugins/navigation/public';
 
 interface IndicesProps extends RouteComponentProps {
   indexService: IndexService;
   commonService: CommonService;
+  savedObjects: SavedObjectsClientContract;
+  setActionMenu: (menuMount: MountPoint | undefined) => void;
 }
 
 interface IndicesState {
@@ -56,13 +61,26 @@ interface IndicesState {
   loadingIndices: boolean;
   showDataStreams: boolean;
   isDataStreamColumnVisible: boolean;
+  dataSourceId: string;
+  dataSourceLabel: string;
 }
 
 export default class Indices extends Component<IndicesProps, IndicesState> {
   static contextType = CoreServicesContext;
+
   constructor(props: IndicesProps) {
     super(props);
-    const { from, size, search, sortField, sortDirection, showDataStreams } = getURLQueryParams(this.props.location);
+    const {
+      from,
+      size,
+      search,
+      sortField,
+      sortDirection,
+      showDataStreams,
+      dataSourceId = '',
+      dataSourceLabel = ''
+    } = getURLQueryParams(this.props.location);
+    console.log("this props location in indices ", this.props.location);
     this.state = {
       totalIndices: 0,
       from,
@@ -76,6 +94,8 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
       loadingIndices: true,
       showDataStreams,
       isDataStreamColumnVisible: showDataStreams,
+      dataSourceId,
+      dataSourceLabel,
     };
 
     this.getIndices = _.debounce(this.getIndices, 500, { leading: true });
@@ -105,8 +125,16 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
     }
   }
 
-  static getQueryObjectFromState({ from, size, search, sortField, sortDirection, showDataStreams }: IndicesState): IndicesQueryParams {
-    return { from, size, search, sortField, sortDirection, showDataStreams };
+  static getQueryObjectFromState({
+    from,
+    size,
+    search,
+    sortField,
+    sortDirection,
+    showDataStreams,
+    dataSourceId,
+  }: IndicesState): IndicesQueryParams {
+    return { from, size, search, sortField, sortDirection, showDataStreams, dataSourceId };
   }
 
   getIndices = async (): Promise<void> => {
@@ -120,8 +148,8 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
       const getIndicesResponse = await indexService.getIndices({
         ...queryObject,
         terms: this.getTermClausesFromState(),
-        indices: this.getFieldClausesFromState("indices"),
-        dataStreams: this.getFieldClausesFromState("data_streams"),
+        indices: this.getFieldClausesFromState('indices'),
+        dataStreams: this.getFieldClausesFromState('data_streams'),
       });
 
       if (getIndicesResponse.ok) {
@@ -138,7 +166,7 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
         this.context.notifications.toasts.addDanger(getIndicesResponse.error);
       }
     } catch (err) {
-      this.context.notifications.toasts.addDanger(getErrorMessage(err, "There was a problem loading the indices"));
+      this.context.notifications.toasts.addDanger(getErrorMessage(err, 'There was a problem loading the indices'));
     }
 
     // Avoiding flicker by showing/hiding the "Data stream" column only after the results are loaded.
@@ -232,72 +260,100 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
     const { history } = this.props;
 
     return (
-      <ContentPanel
-        actions={
-          <ContentPanelActions
-            actions={[
-              {
-                text: "Refresh",
-                buttonProps: {
-                  iconType: "refresh",
-                  onClick: this.getIndices,
-                },
-              },
-              {
-                children: (
-                  <IndicesActions
-                    {...this.props}
-                    onDelete={this.getIndices}
-                    onClose={this.getIndices}
-                    onShrink={this.getIndices}
-                    selectedItems={this.state.selectedItems}
-                    getIndices={this.getIndices}
-                  />
-                ),
-                text: "",
-              },
-              {
-                text: "Create Index",
-                buttonProps: {
-                  fill: true,
-                  onClick: () => {
-                    this.props.history.push(ROUTES.CREATE_INDEX);
+      <>
+        <TopNavMenu
+          appName={'test'}
+          setMenuMountPoint={this.props.setActionMenu}
+          showDataSourcePicker={true}
+          dataSourceCallBackFunc={(dataSourceId: string, dataSourceLabel: string) => {
+            console.log("data source id is ", dataSourceId, dataSourceLabel);
+            this.setState({ dataSourceId, dataSourceLabel });
+          }}
+          disableDataSourcePicker={false}
+          notifications={this.context.notifications.toasts}
+          savedObjects={this.props.savedObjects}
+        // defaultOption={(() => {
+        //   if (this.state.dataSourceId && this.state.dataSourceId != "") {
+        //     return {
+        //       id: this.state.dataSourceId
+        //     }
+        //   }
+        //   return undefined;
+        // })()}
+        />
+        <ContentPanel
+          actions={
+            <ContentPanelActions
+              actions={[
+                {
+                  text: 'Refresh',
+                  buttonProps: {
+                    iconType: 'refresh',
+                    onClick: this.getIndices,
                   },
                 },
-              },
-            ]}
+                {
+                  children: (
+                    <IndicesActions
+                      {...this.props}
+                      onDelete={this.getIndices}
+                      onClose={this.getIndices}
+                      onShrink={this.getIndices}
+                      selectedItems={this.state.selectedItems}
+                      getIndices={this.getIndices}
+                      dataSourceId={this.state.dataSourceId}
+                    />
+                  ),
+                  text: '',
+                },
+                {
+                  text: 'Create Index',
+                  buttonProps: {
+                    fill: true,
+                    onClick: () => {
+                      this.props.history.push(`${ROUTES.CREATE_INDEX}?dataSourceId=${this.state.dataSourceId}`);
+                    },
+                  },
+                },
+              ]}
+            />
+          }
+          bodyStyles={{ padding: 'initial' }}
+          title="Indexes"
+          itemCount={totalIndices}
+        >
+          <IndexControls
+            search={search}
+            onSearchChange={this.onSearchChange}
+            onRefresh={this.getIndices}
+            showDataStreams={showDataStreams}
+            getDataStreams={this.getDataStreams}
+            toggleShowDataStreams={this.toggleShowDataStreams}
           />
-        }
-        bodyStyles={{ padding: "initial" }}
-        title="Indexes"
-        itemCount={totalIndices}
-      >
-        <IndexControls
-          search={search}
-          onSearchChange={this.onSearchChange}
-          onRefresh={this.getIndices}
-          showDataStreams={showDataStreams}
-          getDataStreams={this.getDataStreams}
-          toggleShowDataStreams={this.toggleShowDataStreams}
-        />
 
-        <EuiHorizontalRule margin="xs" />
+          <EuiHorizontalRule margin="xs" />
 
-        <EuiBasicTable
-          columns={indicesColumns(isDataStreamColumnVisible, {
-            history,
-          })}
-          loading={this.state.loadingIndices}
-          isSelectable={true}
-          itemId="index"
-          items={indices}
-          noItemsMessage={<IndexEmptyPrompt filterIsApplied={filterIsApplied} loading={loadingIndices} resetFilters={this.resetFilters} />}
-          onChange={this.onTableChange}
-          pagination={pagination}
-          selection={selection}
-          sorting={sorting}
-        />
-      </ContentPanel>
+          <EuiBasicTable
+            columns={indicesColumns(isDataStreamColumnVisible, {
+              history,
+              dataSourceId: this.state.dataSourceId,
+              dataSourceLabel: this.state.dataSourceLabel
+            })}
+            loading={this.state.loadingIndices}
+            isSelectable={true}
+            itemId="index"
+            items={indices}
+            noItemsMessage={
+              <IndexEmptyPrompt filterIsApplied={filterIsApplied} loading={loadingIndices}
+                resetFilters={this.resetFilters} />
+            }
+            onChange={this.onTableChange}
+            pagination={pagination}
+            selection={selection}
+            sorting={sorting}
+          />
+        </ContentPanel>
+      </>
     );
   }
 }

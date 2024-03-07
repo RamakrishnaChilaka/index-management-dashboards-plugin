@@ -52,6 +52,7 @@ export interface IndexFormProps extends Pick<IndexDetailProps, "readonly" | "sou
   onCancel?: () => void;
   onSubmitSuccess?: (indexName: string) => void;
   hideButtons?: boolean;
+  dataSourceId?: string;
 }
 
 interface CreateIndexState {
@@ -133,6 +134,7 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
       data: {
         index: indexName,
         flat_settings: true,
+        dataSourceId: this.props.dataSourceId,
       },
     });
     if (response.ok) {
@@ -200,6 +202,7 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
           body: {
             actions: aliasActions,
           },
+          dataSourceId: this.props.dataSourceId,
         },
       });
     }
@@ -242,6 +245,7 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
         flat_settings: true,
         // In edit mode, only dynamic settings can be modified
         body: finalSettings,
+        dataSourceId: this.props.dataSourceId,
       },
     });
   };
@@ -272,6 +276,7 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
             ...indexDetail.mappings,
             properties: newMappingSettings,
           },
+          dataSourceId: this.props.dataSourceId,
         },
       });
     }
@@ -325,6 +330,7 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
       }
       result = await this.chainPromise(chainedPromises);
     } else {
+      console.log("this.props create index ", this.props);
       result = await this.commonService.apiCaller({
         endpoint: "indices.create",
         method: "PUT",
@@ -337,6 +343,7 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
               properties: transformArrayToObject(mappings?.properties || []),
             },
           },
+          dataSourceId: this.props.dataSourceId,
         },
       });
     }
@@ -369,9 +376,8 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
           "d"
         );
         if (findLineNumber(jsonRegExp, mappingsEditorValue)) {
-          finalMessage = `There is a problem with the index mapping syntax. Unsupported type "${
-            typeParseExceptionResult[1]
-          }" on line ${findLineNumber(jsonRegExp, mappingsEditorValue)}.`;
+          finalMessage = `There is a problem with the index mapping syntax. Unsupported type "${typeParseExceptionResult[1]
+            }" on line ${findLineNumber(jsonRegExp, mappingsEditorValue)}.`;
         }
       }
       this.context.notifications.toasts.addDanger(finalMessage);
@@ -386,6 +392,7 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
         data: {
           path: `/_index_template/_simulate_index/${indexName}`,
           method: "POST",
+          dataSourceId: this.props.dataSourceId,
         },
       })
       .then((res) => {
@@ -438,6 +445,7 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
                 format: "json",
                 name: `*${aliasName || ""}*`,
                 s: "alias:desc",
+                dataSourceId: this.props.dataSourceId,
               },
             })
           }

@@ -10,7 +10,8 @@
     "opensearchDashboardsReact"
   ],
   "optionalPlugins": [
-    "managementOverview"
+    "managementOverview",
+    "dataSource"
   ],
   "server": true,
   "ui": true

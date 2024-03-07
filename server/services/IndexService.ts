@@ -34,7 +34,7 @@ export default class IndexService {
   }
 
   getIndices = async (
-    context: RequestHandlerContext,
+    context: any,
     request: OpenSearchDashboardsRequest,
     response: OpenSearchDashboardsResponseFactory
   ): Promise<IOpenSearchDashboardsResponse<ServerResponse<GetIndicesResponse>>> => {
@@ -51,6 +51,7 @@ export default class IndexService {
         showDataStreams,
         expandWildcards,
         exactSearch,
+        dataSourceId,
       } = request.query as {
         from: string;
         size: string;
@@ -61,8 +62,11 @@ export default class IndexService {
         indices?: string[];
         dataStreams?: string[];
         showDataStreams: boolean;
+        expandWildcards?: string;
         exactSearch?: string;
+        dataSourceId?: string;
       };
+      console.log("data sourceid inside indexservice ", dataSourceId)
       const params: {
         index: string;
         format: string;
@@ -85,7 +89,15 @@ export default class IndexService {
         params.index = exactSearch;
       }
 
-      const { callAsCurrentUser: callWithRequest } = this.osDriver.asScoped(request);
+      // const { callAsCurrentUser: callWithRequest } = this.osDriver.asScoped(request);
+      // const dataSourceId = "e4669e80-dacf-11ee-8a5f-8f8578112d72";
+      let callWithRequest;
+      if (!dataSourceId || dataSourceId.trim().length == 0) {
+        // empty or null or undefined string
+        callWithRequest = this.osDriver.asScoped(request).callAsCurrentUser;
+      } else {
+        callWithRequest = context.dataSource.opensearch.legacy.getClient(dataSourceId).callAPI;
+      }
 
       const [recoverys, tasks, indicesResponse, indexToDataStreamMapping]: [
         IRecoveryItem[],
@@ -219,7 +231,12 @@ export default class IndexService {
     }
   };
 
-  _getManagedStatus = async (request: OpenSearchDashboardsRequest, indexNames: string[]): Promise<{ [indexName: string]: string }> => {
+  _getManagedStatus = async (
+    request: OpenSearchDashboardsRequest,
+    indexNames: string[]
+  ): Promise<{
+    [indexName: string]: string;
+  }> => {
     try {
       const explainParamas = { index: indexNames.toString() };
       const { callAsCurrentUser: callWithRequest } = this.osDriver.asScoped(request);

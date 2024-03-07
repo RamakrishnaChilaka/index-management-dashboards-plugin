@@ -17,7 +17,12 @@ import { ListenType } from "../../../lib/JobScheduler";
 import { getClusterInfo } from "../../../utils/helpers";
 
 export function getURLQueryParams(location: { search: string }): IndicesQueryParams {
-  const { from, size, search, sortField, sortDirection, showDataStreams } = queryString.parse(location.search);
+  console.log("geturl query param ", location.search);
+  const { from, size,
+    search,
+    sortField,
+    sortDirection,
+    showDataStreams, dataSourceId } = queryString.parse(location.search);
   return <IndicesQueryParams>{
     // @ts-ignore
     from: isNaN(parseInt(from, 10)) ? DEFAULT_QUERY_PARAMS.from : parseInt(from, 10),
@@ -27,6 +32,7 @@ export function getURLQueryParams(location: { search: string }): IndicesQueryPar
     sortField: typeof sortField !== "string" ? "index" : sortField,
     sortDirection: typeof sortDirection !== "string" ? DEFAULT_QUERY_PARAMS.sortDirection : sortDirection,
     showDataStreams: showDataStreams === undefined ? DEFAULT_QUERY_PARAMS.showDataStreams : showDataStreams === "true",
+    dataSourceId: typeof dataSourceId !== "string" ? "" : dataSourceId,
   };
 }
 

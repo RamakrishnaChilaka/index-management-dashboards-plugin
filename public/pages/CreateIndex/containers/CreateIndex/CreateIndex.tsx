@@ -6,18 +6,34 @@
 import React, { Component } from "react";
 import { EuiSpacer, EuiTitle } from "@elastic/eui";
 import { RouteComponentProps } from "react-router-dom";
+import { MountPoint } from "opensearch-dashboards/public";
 import IndexForm from "../IndexForm";
 import { BREADCRUMBS, IndicesUpdateMode, ROUTES } from "../../../../utils/constants";
 import { CoreServicesContext } from "../../../../components/core_services";
 import { CommonService } from "../../../../services/index";
+import { TopNavMenu } from "../../../../../../../src/plugins/navigation/public";
+import { getURLQueryParams } from "../../../Indices/utils/helpers";
 
 interface CreateIndexProps extends RouteComponentProps<{ index?: string; mode?: IndicesUpdateMode }> {
   isEdit?: boolean;
   commonService: CommonService;
+  setActionMenu: (menuMount: MountPoint | undefined) => void;
 }
 
-export default class CreateIndex extends Component<CreateIndexProps> {
+interface CreateIndexState {
+  dataSourceId: string;
+}
+
+export default class CreateIndex extends Component<CreateIndexProps, CreateIndexState> {
   static contextType = CoreServicesContext;
+
+  constructor(props) {
+    super(props);
+    const { dataSourceId } = getURLQueryParams(this.props.location);
+    this.state = {
+      dataSourceId,
+    };
+  }
 
   get index() {
     return this.props.match.params.index;
@@ -43,19 +59,31 @@ export default class CreateIndex extends Component<CreateIndexProps> {
   render() {
     const isEdit = this.isEdit;
 
+    console.log("data source id in createIndex is ", this.state.dataSourceId);
+
     return (
-      <div style={{ padding: "0px 50px" }}>
-        <EuiTitle size="l">
-          <h1>{isEdit ? "Edit" : "Create"} index</h1>
-        </EuiTitle>
-        <EuiSpacer />
-        <IndexForm
-          index={this.index}
-          mode={this.props.match.params.mode}
-          onCancel={this.onCancel}
-          onSubmitSuccess={() => this.props.history.push(ROUTES.INDICES)}
+      <>
+        <TopNavMenu
+          appName={"test"}
+          setMenuMountPoint={this.props.setActionMenu}
+          showDataSourcePicker={true}
+          disableDataSourcePicker={true}
+          notifications={this.context.notifications.toasts}
         />
-      </div>
+        <div style={{ padding: "0px 50px" }}>
+          <EuiTitle size="l">
+            <h1>{isEdit ? "Edit" : "Create"} index</h1>
+          </EuiTitle>
+          <EuiSpacer />
+          <IndexForm
+            index={this.index}
+            mode={this.props.match.params.mode}
+            onCancel={this.onCancel}
+            onSubmitSuccess={() => this.props.history.push(ROUTES.INDICES)}
+            dataSourceId={this.state.dataSourceId}
+          />
+        </div>
+      </>
     );
   }
 }

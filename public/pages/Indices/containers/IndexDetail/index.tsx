@@ -11,17 +11,19 @@ import { ROUTES } from "../../../../utils/constants";
 export interface IndexDetailModalProps {
   index: string;
   history: RouteComponentProps["history"];
+  dataSourceId?: string;
+  dataSourceLabel?: string;
 }
 
 export default function IndexDetail(props: IndexDetailModalProps) {
-  const { index, history } = props;
+  const { index, history, dataSourceId = "", dataSourceLabel } = props;
 
   return (
     <>
       <EuiCopy textToCopy={index}>
         {(copy) => <EuiButtonEmpty size="xs" flush="right" iconType="copyClipboard" onClick={copy} color="text"></EuiButtonEmpty>}
       </EuiCopy>
-      <EuiLink onClick={() => history.push(`${ROUTES.INDEX_DETAIL}/${index}`)} data-test-subj={`viewIndexDetailButton-${index}`}>
+      <EuiLink onClick={() => history.push(`${ROUTES.INDEX_DETAIL}/${index}?dataSourceId=${dataSourceId}&dataSourceLabel=${dataSourceLabel}`)} data-test-subj={`viewIndexDetailButton-${index}`}>
         {index}
       </EuiLink>
     </>

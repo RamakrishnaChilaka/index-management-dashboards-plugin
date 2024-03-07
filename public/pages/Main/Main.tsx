@@ -7,7 +7,8 @@ import React, { Component } from "react";
 import { Switch, Route, Redirect, RouteComponentProps } from "react-router-dom";
 // @ts-ignore
 import { EuiSideNav, EuiPage, EuiPageBody, EuiPageSideBar } from "@elastic/eui";
-import { CoreStart } from "opensearch-dashboards/public";
+import { CoreStart, MountPoint } from "opensearch-dashboards/public";
+import queryString from "query-string";
 import Policies from "../Policies";
 import ManagedIndices from "../ManagedIndices";
 import Indices from "../Indices";
@@ -27,7 +28,6 @@ import EditRollup from "../EditRollup/containers";
 import RollupDetails from "../RollupDetails/containers/RollupDetails";
 import { EditTransform, Transforms } from "../Transforms";
 import TransformDetails from "../Transforms/containers/Transforms/TransformDetails";
-import queryString from "query-string";
 import CreateSnapshotPolicy from "../CreateSnapshotPolicy";
 import Repositories from "../Repositories";
 import SnapshotPolicies from "../SnapshotPolicies";
@@ -113,6 +113,7 @@ const HIDDEN_NAV_STARTS_WITH_ROUTE = [
 
 interface MainProps extends RouteComponentProps {
   landingPage: string;
+  setActionMenu: (menuMount: MountPoint | undefined) => void
 }
 
 export default class Main extends Component<MainProps, object> {
@@ -231,7 +232,7 @@ export default class Main extends Component<MainProps, object> {
                   <ModalProvider>
                     <ModalRoot services={services} />
                     <EuiPage restrictWidth="100%">
-                      {/*Hide side navigation bar when creating or editing rollup job*/}
+                      {/* Hide side navigation bar when creating or editing rollup job*/}
                       {!HIDDEN_NAV_ROUTES.includes(pathname) && !HIDDEN_NAV_STARTS_WITH_ROUTE.some((item) => pathname.startsWith(item)) ? (
                         <EuiPageSideBar style={{ minWidth: 200 }}>
                           <EuiSideNav style={{ width: 200 }} items={sideNav} />
@@ -369,7 +370,13 @@ export default class Main extends Component<MainProps, object> {
                             path={ROUTES.INDICES}
                             render={(props: RouteComponentProps) => (
                               <div style={ROUTE_STYLE}>
-                                <Indices {...props} indexService={services.indexService} commonService={services.commonService} />
+                                <Indices
+                                  {...props}
+                                  indexService={services.indexService}
+                                  commonService={services.commonService}
+                                  savedObjects={core.savedObjects.client}
+                                  setActionMenu={this.props.setActionMenu}
+                                />
                               </div>
                             )}
                           />
@@ -446,7 +453,10 @@ export default class Main extends Component<MainProps, object> {
                             path={`${ROUTES.CREATE_INDEX}/:index/:mode`}
                             render={(props: RouteComponentProps) => (
                               <div style={ROUTE_STYLE}>
-                                <CreateIndex {...props} commonService={services.commonService} />
+                                <CreateIndex {...props}
+                                  commonService={services.commonService}
+                                  setActionMenu={this.props.setActionMenu}
+                                />
                               </div>
                             )}
                           />
@@ -454,7 +464,10 @@ export default class Main extends Component<MainProps, object> {
                             path={`${ROUTES.CREATE_INDEX}/:index`}
                             render={(props: RouteComponentProps) => (
                               <div style={ROUTE_STYLE}>
-                                <CreateIndex {...props} commonService={services.commonService} />
+                                <CreateIndex {...props}
+                                  commonService={services.commonService}
+                                  setActionMenu={this.props.setActionMenu}
+                                />
                               </div>
                             )}
                           />
@@ -462,7 +475,9 @@ export default class Main extends Component<MainProps, object> {
                             path={ROUTES.CREATE_INDEX}
                             render={(props: RouteComponentProps) => (
                               <div style={ROUTE_STYLE}>
-                                <CreateIndex {...props} commonService={services.commonService} />
+                                <CreateIndex {...props}
+                                  commonService={services.commonService}
+                                  setActionMenu={this.props.setActionMenu} />
                               </div>
                             )}
                           />
@@ -558,7 +573,10 @@ export default class Main extends Component<MainProps, object> {
                             path={`${ROUTES.INDEX_DETAIL}/:index`}
                             render={(props) => (
                               <div style={ROUTE_STYLE}>
-                                <IndexDetail {...props} />
+                                <IndexDetail
+                                  {...props}
+                                  setActionMenu={this.props.setActionMenu}
+                                />
                               </div>
                             )}
                           />
