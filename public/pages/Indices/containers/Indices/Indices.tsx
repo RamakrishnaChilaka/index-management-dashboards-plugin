@@ -287,7 +287,7 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
             <ContentPanelActions
               actions={[
                 {
-                  text: 'Refresh1',
+                  text: 'Refresh',
                   buttonProps: {
                     iconType: 'refresh',
                     onClick: this.getIndices,
