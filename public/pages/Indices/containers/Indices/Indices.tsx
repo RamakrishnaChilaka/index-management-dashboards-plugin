@@ -3,26 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { Component, useState } from 'react';
+import React, { Component } from 'react';
 import _ from 'lodash';
 import { RouteComponentProps } from 'react-router-dom';
 import queryString from 'query-string';
 import {
-  EuiBasicTable,
-  EuiHorizontalRule,
-  // @ts-ignore
-  Criteria,
-  EuiTableSortingType,
-  Direction,
-  // @ts-ignore
-  Pagination,
-  EuiTableSelectionType,
   ArgsWithError,
   ArgsWithQuery,
+  Criteria,
+  Direction,
+  EuiBasicTable,
+  EuiHorizontalRule,
+  EuiTableSelectionType,
+  EuiTableSortingType,
+  Pagination,
   Query,
 } from '@elastic/eui';
-import { SavedObjectsClientContract } from 'opensearch-dashboards/server';
-import { MountPoint } from 'opensearch-dashboards/public';
+import { MountPoint, SavedObjectsClientContract } from 'opensearch-dashboards/public';
 import { ContentPanel, ContentPanelActions } from '../../../../components/ContentPanel';
 import IndexControls from '../../components/IndexControls';
 import IndexEmptyPrompt from '../../components/IndexEmptyPrompt';
@@ -39,7 +36,7 @@ import { SECURITY_EXCEPTION_PREFIX } from '../../../../../server/utils/constants
 import IndicesActions from '../IndicesActions';
 import { destroyListener, EVENT_MAP, listenEvent } from '../../../../JobHandler';
 import './index.scss';
-import { TopNavMenu } from '../../../../../../../src/plugins/navigation/public';
+import { DataSourceMenu } from '../../../../../../../src/plugins/data_source_management/public';
 
 interface IndicesProps extends RouteComponentProps {
   indexService: IndexService;
@@ -263,35 +260,34 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
 
     return (
       <>
-        <TopNavMenu
-          appName={'test'}
+        <DataSourceMenu
+          appName={"Index State Management"}
           setMenuMountPoint={this.props.setActionMenu}
-          showDataSourcePicker={true}
-          dataSourceCallBackFunc={(dataSourceId: string, dataSourceLabel: string) => {
-            console.log('data source id is ', dataSourceId, dataSourceLabel);
+          showDataSourceSelectable={true}
+          dataSourceCallBackFunc={({id: dataSourceId, label: dataSourceLabel}) => {
             this.setState({ dataSourceId, dataSourceLabel });
           }}
-          disableDataSourcePicker={false}
-          notifications={this.context.notifications.toasts}
+          disableDataSourceSelectable={false}
+          notifications={this.context.notifications}
           savedObjects={this.props.savedObjects}
-          defaultOption={(() => {
+          selectedOption={(() => {
             if (this.state.dataSourceId && this.state.dataSourceId !== '') {
-              const y = [{
+              return [{
                 id: this.state.dataSourceId,
                 label: this.state.dataSourceLabel,
               }];
-              console.log('state is ', y);
-              return y;
             }
             return undefined;
           })()}
+          fullWidth={false}
+          hideLocalCluster={false}
         />
         <ContentPanel
           actions={
             <ContentPanelActions
               actions={[
                 {
-                  text: 'Refresh',
+                  text: 'Refresh1',
                   buttonProps: {
                     iconType: 'refresh',
                     onClick: this.getIndices,

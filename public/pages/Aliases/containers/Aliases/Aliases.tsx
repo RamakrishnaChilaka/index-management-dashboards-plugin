@@ -36,8 +36,8 @@ import IndexControls, { SearchControlsProps } from '../../components/IndexContro
 import CreateAlias from '../CreateAlias';
 import AliasesActions from '../AliasActions';
 import { CoreStart, MountPoint } from 'opensearch-dashboards/public';
-import { TopNavMenu } from '../../../../../../../src/plugins/navigation/public';
 import { SavedObjectsClientContract } from 'opensearch-dashboards/server';
+import { DataSourceMenu } from '../../../../../../../src/plugins/data_source_management/public';
 
 interface AliasesProps extends RouteComponentProps {
   commonService: CommonService;
@@ -306,28 +306,27 @@ class Aliases extends Component<AliasesProps, AliasesState> {
     };
     return (
       <>
-        <TopNavMenu
-          appName={'test'}
+        <DataSourceMenu
+          appName={"Index State Management"}
           setMenuMountPoint={this.props.setActionMenu}
-          showDataSourcePicker={true}
-          dataSourceCallBackFunc={(dataSourceId: string, dataSourceLabel: string) => {
-            console.log('data source id is ', dataSourceId, dataSourceLabel);
+          showDataSourceSelectable={true}
+          dataSourceCallBackFunc={({id: dataSourceId, label: dataSourceLabel}) => {
             this.setState({ dataSourceId, dataSourceLabel });
           }}
-          disableDataSourcePicker={false}
-          notifications={this.context.notifications.toasts}
+          disableDataSourceSelectable={false}
+          notifications={this.context.notifications}
           savedObjects={this.props.savedObjects}
-          defaultOption={(() => {
+          selectedOption={(() => {
             if (this.state.dataSourceId && this.state.dataSourceId !== '') {
-              const y = [{
+              return [{
                 id: this.state.dataSourceId,
                 label: this.state.dataSourceLabel,
               }];
-              console.log('state is ', y);
-              return y;
             }
             return undefined;
           })()}
+          fullWidth={false}
+          hideLocalCluster={false}
         />
         <ContentPanel
           actions={

@@ -32,7 +32,7 @@ import { OVERVIEW_DISPLAY_INFO } from "./constants";
 import { EVENT_MAP, destroyListener, listenEvent } from "../../../../JobHandler";
 import { useLocation } from "react-router";
 import { MountPoint } from "opensearch-dashboards/public";
-import { TopNavMenu } from '../../../../../../../src/plugins/navigation/public';
+import { DataSourceMenu } from '../../../../../../../src/plugins/data_source_management/public';
 
 export interface IndexDetailModalProps extends RouteComponentProps<{ index: string }> {
   setActionMenu: (menuMount: MountPoint | undefined) => void
@@ -60,7 +60,6 @@ export default function IndexDetail(props: IndexDetailModalProps) {
   const params = new URLSearchParams(location.search);
   const dataSourceId = params.get('dataSourceId');
   const dataSourceLabel = params.get("dataSourceLabel");
-  console.log(`data source id: ${dataSourceId}, data source label: ${dataSourceLabel}`)
 
   const fetchIndicesDetail = () =>
     services.commonService
@@ -253,20 +252,19 @@ export default function IndexDetail(props: IndexDetailModalProps) {
 
   return (
     <>
-      <TopNavMenu
-        appName={'test'}
+      <DataSourceMenu
+        appName={"Index State Management"}
         setMenuMountPoint={props.setActionMenu}
-        notifications={coreService?.notifications.toasts}
-        showDataSourcePicker={true}
-        disableDataSourcePicker={true}
-        defaultOption={(() => {
+        showDataSourceSelectable={true}
+        disableDataSourceSelectable={true}
+        notifications={coreService?.notifications}
+        savedObjects={coreService?.savedObjects.client}
+        selectedOption={(() => {
           if (dataSourceId && dataSourceId !== '') {
-            const y = [{
+            return [{
               id: dataSourceId,
               label: dataSourceLabel,
             }];
-            console.log('state is ', y);
-            return y;
           }
           return undefined;
         })()}

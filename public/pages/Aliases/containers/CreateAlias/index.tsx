@@ -117,7 +117,6 @@ export default function CreateAlias(props: ICreateAliasProps) {
   const params = new URLSearchParams(location.search);
   const dataSourceId = params.get('dataSourceId');
   const dataSourceLabel = params.get("dataSourceLabel");
-  console.log(`data source id: ${dataSourceId}, data source label: ${dataSourceLabel}`)
 
   useEffect(() => {
     if (props.visible) {

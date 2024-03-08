@@ -3,16 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { Component } from "react";
-import { EuiSpacer, EuiTitle } from "@elastic/eui";
-import { RouteComponentProps } from "react-router-dom";
-import { MountPoint } from "opensearch-dashboards/public";
-import IndexForm from "../IndexForm";
-import { BREADCRUMBS, IndicesUpdateMode, ROUTES } from "../../../../utils/constants";
-import { CoreServicesContext } from "../../../../components/core_services";
-import { CommonService } from "../../../../services/index";
-import { TopNavMenu } from "../../../../../../../src/plugins/navigation/public";
-import { getURLQueryParams } from "../../../Indices/utils/helpers";
+import React, { Component } from 'react';
+import { EuiSpacer, EuiTitle } from '@elastic/eui';
+import { RouteComponentProps } from 'react-router-dom';
+import { MountPoint } from 'opensearch-dashboards/public';
+import IndexForm from '../IndexForm';
+import { BREADCRUMBS, IndicesUpdateMode, ROUTES } from '../../../../utils/constants';
+import { CoreServicesContext } from '../../../../components/core_services';
+import { CommonService } from '../../../../services/index';
+import { getURLQueryParams } from '../../../Indices/utils/helpers';
+import { DataSourceMenu } from '../../../../../../../src/plugins/data_source_management/public';
 
 interface CreateIndexProps extends RouteComponentProps<{ index?: string; mode?: IndicesUpdateMode }> {
   isEdit?: boolean;
@@ -61,31 +61,30 @@ export default class CreateIndex extends Component<CreateIndexProps, CreateIndex
   render() {
     const isEdit = this.isEdit;
 
-    console.log("data source id in createIndex is ", this.state.dataSourceId, this.state.dataSourceLabel);
+    console.log('data source id in createIndex is ', this.state.dataSourceId, this.state.dataSourceLabel);
 
     return (
       <>
-        <TopNavMenu
-          appName={"test"}
+        <DataSourceMenu
+          appName={"Index State Management"}
           setMenuMountPoint={this.props.setActionMenu}
-          showDataSourcePicker={true}
-          disableDataSourcePicker={true}
-          notifications={this.context.notifications.toasts}
-          defaultOption={(() => {
+          showDataSourceSelectable={true}
+          disableDataSourceSelectable={true}
+          notifications={this.context.notifications}
+          savedObjects={this.context.savedObjects.client}
+          selectedOption={(() => {
             if (this.state.dataSourceId && this.state.dataSourceId !== '') {
-              const y = [{
+              return [{
                 id: this.state.dataSourceId,
                 label: this.state.dataSourceLabel,
               }];
-              console.log('state is ', y);
-              return y;
             }
             return undefined;
           })()}
         />
-        <div style={{ padding: "0px 50px" }}>
+        <div style={{ padding: '0px 50px' }}>
           <EuiTitle size="l">
-            <h1>{isEdit ? "Edit" : "Create"} index</h1>
+            <h1>{isEdit ? 'Edit' : 'Create'} index</h1>
           </EuiTitle>
           <EuiSpacer />
           <IndexForm
