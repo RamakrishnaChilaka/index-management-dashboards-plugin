@@ -3,80 +3,80 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { Component } from "react";
-import { Switch, Route, Redirect, RouteComponentProps } from "react-router-dom";
+import React, { Component } from 'react';
+import { Switch, Route, Redirect, RouteComponentProps } from 'react-router-dom';
 // @ts-ignore
-import { EuiSideNav, EuiPage, EuiPageBody, EuiPageSideBar } from "@elastic/eui";
-import { CoreStart, MountPoint } from "opensearch-dashboards/public";
-import queryString from "query-string";
-import Policies from "../Policies";
-import ManagedIndices from "../ManagedIndices";
-import Indices from "../Indices";
-import CreatePolicy from "../CreatePolicy";
-import VisualCreatePolicy from "../VisualCreatePolicy";
-import ChangePolicy from "../ChangePolicy";
-import PolicyDetails from "../PolicyDetails/containers/PolicyDetails";
-import Rollups from "../Rollups";
-import { ModalProvider, ModalRoot } from "../../components/Modal";
-import { ServicesConsumer } from "../../services";
-import { BrowserServices } from "../../models/interfaces";
-import { ROUTES } from "../../utils/constants";
-import { CoreServicesConsumer } from "../../components/core_services";
-import CreateRollupForm from "../CreateRollup/containers/CreateRollupForm";
-import CreateTransformForm from "../CreateTransform/containers/CreateTransformForm";
-import EditRollup from "../EditRollup/containers";
-import RollupDetails from "../RollupDetails/containers/RollupDetails";
-import { EditTransform, Transforms } from "../Transforms";
-import TransformDetails from "../Transforms/containers/Transforms/TransformDetails";
-import CreateSnapshotPolicy from "../CreateSnapshotPolicy";
-import Repositories from "../Repositories";
-import SnapshotPolicies from "../SnapshotPolicies";
-import SnapshotPolicyDetails from "../SnapshotPolicyDetails";
-import Snapshots from "../Snapshots";
-import CreateIndex from "../CreateIndex";
-import Reindex from "../Reindex/container/Reindex";
-import Aliases from "../Aliases";
-import Templates from "../Templates";
-import CreateIndexTemplate from "../CreateIndexTemplate";
-import SplitIndex from "../SplitIndex";
-import IndexDetail from "../IndexDetail";
-import ShrinkIndex from "../ShrinkIndex/container/ShrinkIndex";
-import Rollover from "../Rollover";
-import DataStreams from "../DataStreams";
-import CreateDataStream from "../CreateDataStream";
-import ForceMerge from "../ForceMerge";
-import Notifications from "../Notifications";
-import ComposableTemplates from "../ComposableTemplates";
-import CreateComposableTemplate from "../CreateComposableTemplate";
+import { EuiSideNav, EuiPage, EuiPageBody, EuiPageSideBar } from '@elastic/eui';
+import { CoreStart, MountPoint } from 'opensearch-dashboards/public';
+import queryString from 'query-string';
+import Policies from '../Policies';
+import ManagedIndices from '../ManagedIndices';
+import Indices from '../Indices';
+import CreatePolicy from '../CreatePolicy';
+import VisualCreatePolicy from '../VisualCreatePolicy';
+import ChangePolicy from '../ChangePolicy';
+import PolicyDetails from '../PolicyDetails/containers/PolicyDetails';
+import Rollups from '../Rollups';
+import { ModalProvider, ModalRoot } from '../../components/Modal';
+import { ServicesConsumer } from '../../services';
+import { BrowserServices } from '../../models/interfaces';
+import { ROUTES } from '../../utils/constants';
+import { CoreServicesConsumer } from '../../components/core_services';
+import CreateRollupForm from '../CreateRollup/containers/CreateRollupForm';
+import CreateTransformForm from '../CreateTransform/containers/CreateTransformForm';
+import EditRollup from '../EditRollup/containers';
+import RollupDetails from '../RollupDetails/containers/RollupDetails';
+import { EditTransform, Transforms } from '../Transforms';
+import TransformDetails from '../Transforms/containers/Transforms/TransformDetails';
+import CreateSnapshotPolicy from '../CreateSnapshotPolicy';
+import Repositories from '../Repositories';
+import SnapshotPolicies from '../SnapshotPolicies';
+import SnapshotPolicyDetails from '../SnapshotPolicyDetails';
+import Snapshots from '../Snapshots';
+import CreateIndex from '../CreateIndex';
+import Reindex from '../Reindex/container/Reindex';
+import Aliases from '../Aliases';
+import Templates from '../Templates';
+import CreateIndexTemplate from '../CreateIndexTemplate';
+import SplitIndex from '../SplitIndex';
+import IndexDetail from '../IndexDetail';
+import ShrinkIndex from '../ShrinkIndex/container/ShrinkIndex';
+import Rollover from '../Rollover';
+import DataStreams from '../DataStreams';
+import CreateDataStream from '../CreateDataStream';
+import ForceMerge from '../ForceMerge';
+import Notifications from '../Notifications';
+import ComposableTemplates from '../ComposableTemplates';
+import CreateComposableTemplate from '../CreateComposableTemplate';
 
 enum Navigation {
-  IndexManagement = "Index Management",
-  IndexPolicies = "State management policies",
-  ManagedIndices = "Policy managed indexes",
-  Indices = "Indexes",
-  Rollups = "Rollup jobs",
-  Transforms = "Transform jobs",
-  SnapshotManagement = "Snapshot Management",
-  Snapshots = "Snapshots",
-  SnapshotPolicies = "Snapshot policies",
-  Repositories = "Repositories",
-  Aliases = "Aliases",
-  Templates = "Templates",
-  DataStreams = "Data streams",
-  CreateDataStream = "Create data stream",
-  Notifications = "Notification settings",
-  ComposableTemplates = "Component templates",
+  IndexManagement = 'Index Management',
+  IndexPolicies = 'State management policies',
+  ManagedIndices = 'Policy managed indexes',
+  Indices = 'Indexes',
+  Rollups = 'Rollup jobs',
+  Transforms = 'Transform jobs',
+  SnapshotManagement = 'Snapshot Management',
+  Snapshots = 'Snapshots',
+  SnapshotPolicies = 'Snapshot policies',
+  Repositories = 'Repositories',
+  Aliases = 'Aliases',
+  Templates = 'Templates',
+  DataStreams = 'Data streams',
+  CreateDataStream = 'Create data stream',
+  Notifications = 'Notification settings',
+  ComposableTemplates = 'Component templates',
 }
 
 enum Pathname {
-  IndexPolicies = "/index-policies",
-  ManagedIndices = "/managed-indices",
-  Indices = "/indices",
-  Rollups = "/rollups",
-  Transforms = "/transforms",
-  Snapshots = "/snapshots",
-  SnapshotPolicies = "/snapshot-policies",
-  Repositories = "/repositories",
+  IndexPolicies = '/index-policies',
+  ManagedIndices = '/managed-indices',
+  Indices = '/indices',
+  Rollups = '/rollups',
+  Transforms = '/transforms',
+  Snapshots = '/snapshots',
+  SnapshotPolicies = '/snapshot-policies',
+  Repositories = '/repositories',
 }
 
 const HIDDEN_NAV_ROUTES = [
@@ -113,7 +113,7 @@ const HIDDEN_NAV_STARTS_WITH_ROUTE = [
 
 interface MainProps extends RouteComponentProps {
   landingPage: string;
-  setActionMenu: (menuMount: MountPoint | undefined) => void
+  setActionMenu: (menuMount: MountPoint | undefined) => void;
 }
 
 export default class Main extends Component<MainProps, object> {
@@ -220,7 +220,7 @@ export default class Main extends Component<MainProps, object> {
 
     const { landingPage } = this.props;
 
-    const ROUTE_STYLE = { padding: "25px 25px" };
+    const ROUTE_STYLE = { padding: '25px 25px' };
 
     return (
       <CoreServicesConsumer>
@@ -264,7 +264,8 @@ export default class Main extends Component<MainProps, object> {
                             path={ROUTES.SNAPSHOT_POLICIES}
                             render={(props: RouteComponentProps) => (
                               <div style={ROUTE_STYLE}>
-                                <SnapshotPolicies {...props} snapshotManagementService={services.snapshotManagementService} />
+                                <SnapshotPolicies {...props}
+                                                  snapshotManagementService={services.snapshotManagementService} />
                               </div>
                             )}
                           />
@@ -315,7 +316,7 @@ export default class Main extends Component<MainProps, object> {
                           <Route
                             path={ROUTES.CREATE_POLICY}
                             render={(props: RouteComponentProps) =>
-                              queryString.parse(this.props.location.search).type == "visual" ? (
+                              queryString.parse(this.props.location.search).type == 'visual' ? (
                                 <VisualCreatePolicy
                                   {...props}
                                   isEdit={false}
@@ -330,7 +331,7 @@ export default class Main extends Component<MainProps, object> {
                           <Route
                             path={ROUTES.EDIT_POLICY}
                             render={(props: RouteComponentProps) =>
-                              queryString.parse(this.props.location.search).type == "visual" ? (
+                              queryString.parse(this.props.location.search).type == 'visual' ? (
                                 <VisualCreatePolicy
                                   {...props}
                                   isEdit={true}
@@ -392,7 +393,8 @@ export default class Main extends Component<MainProps, object> {
                             path={ROUTES.CREATE_ROLLUP}
                             render={(props: RouteComponentProps) => (
                               <div style={ROUTE_STYLE}>
-                                <CreateRollupForm {...props} rollupService={services.rollupService} indexService={services.indexService} />
+                                <CreateRollupForm {...props} rollupService={services.rollupService}
+                                                  indexService={services.indexService} />
                               </div>
                             )}
                           />
@@ -454,8 +456,8 @@ export default class Main extends Component<MainProps, object> {
                             render={(props: RouteComponentProps) => (
                               <div style={ROUTE_STYLE}>
                                 <CreateIndex {...props}
-                                  commonService={services.commonService}
-                                  setActionMenu={this.props.setActionMenu}
+                                             commonService={services.commonService}
+                                             setActionMenu={this.props.setActionMenu}
                                 />
                               </div>
                             )}
@@ -465,8 +467,8 @@ export default class Main extends Component<MainProps, object> {
                             render={(props: RouteComponentProps) => (
                               <div style={ROUTE_STYLE}>
                                 <CreateIndex {...props}
-                                  commonService={services.commonService}
-                                  setActionMenu={this.props.setActionMenu}
+                                             commonService={services.commonService}
+                                             setActionMenu={this.props.setActionMenu}
                                 />
                               </div>
                             )}
@@ -476,8 +478,8 @@ export default class Main extends Component<MainProps, object> {
                             render={(props: RouteComponentProps) => (
                               <div style={ROUTE_STYLE}>
                                 <CreateIndex {...props}
-                                  commonService={services.commonService}
-                                  setActionMenu={this.props.setActionMenu} />
+                                             commonService={services.commonService}
+                                             setActionMenu={this.props.setActionMenu} />
                               </div>
                             )}
                           />
@@ -485,7 +487,8 @@ export default class Main extends Component<MainProps, object> {
                             path={ROUTES.REINDEX}
                             render={(props: RouteComponentProps) => (
                               <div style={ROUTE_STYLE}>
-                                <Reindex {...props} commonService={services.commonService} indexService={services.indexService} />
+                                <Reindex {...props} commonService={services.commonService}
+                                         indexService={services.indexService} />
                               </div>
                             )}
                           />
@@ -501,7 +504,11 @@ export default class Main extends Component<MainProps, object> {
                             path={ROUTES.ALIASES}
                             render={(props) => (
                               <div style={ROUTE_STYLE}>
-                                <Aliases {...props} />
+                                <Aliases
+                                  {...props}
+                                  savedObjects={core.savedObjects.client}
+                                  setActionMenu={this.props.setActionMenu}
+                                />
                               </div>
                             )}
                           />

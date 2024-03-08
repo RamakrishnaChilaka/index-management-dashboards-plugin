@@ -24,6 +24,7 @@ import { filterByMinimatch } from "../../../../../utils/helper";
 import { SYSTEM_ALIAS, SYSTEM_INDEX } from "../../../../../utils/constants";
 import { DataStream } from "../../../../../server/models/interfaces";
 import { INDEX_NAMING_MESSAGE, INDEX_NAMING_PATTERN } from "../../../../utils/constants";
+import { useLocation } from 'react-router';
 
 export interface ICreateAliasProps {
   visible: boolean;
@@ -34,6 +35,9 @@ export interface ICreateAliasProps {
 
 export function IndexSelect({ value, onChange }: { value?: string[]; onChange: (val: string[]) => void }) {
   const services = useContext(ServicesContext) as BrowserServices;
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const dataSourceId = params.get('dataSourceId');
   return (
     <RemoteSelect
       placeholder="Select indexes"
@@ -42,8 +46,9 @@ export function IndexSelect({ value, onChange }: { value?: string[]; onChange: (
       onChange={onChange}
       customOptionText="Add {searchValue} as index pattern"
       refreshOptions={async ({ searchValue }) => {
-        const payload: { index?: string; format: string } = {
+        const payload: { index?: string; format: string; dataSourceId: string; } = {
           format: "json",
+          dataSourceId,
         };
         if (searchValue) {
           payload.index = `${searchValue}*`;
@@ -72,6 +77,7 @@ export function IndexSelect({ value, onChange }: { value?: string[]; onChange: (
               data: {
                 path: "/_data_stream",
                 method: "GET",
+                dataSourceId,
               },
             })
             .then((res): string[] => {
@@ -106,6 +112,12 @@ export default function CreateAlias(props: ICreateAliasProps) {
   const services = useContext(ServicesContext) as BrowserServices;
   const coreServices = useContext(CoreServicesContext);
   const isEdit = !!props.alias;
+
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const dataSourceId = params.get('dataSourceId');
+  const dataSourceLabel = params.get("dataSourceLabel");
+  console.log(`data source id: ${dataSourceId}, data source label: ${dataSourceLabel}`)
 
   useEffect(() => {
     if (props.visible) {
@@ -219,6 +231,7 @@ export default function CreateAlias(props: ICreateAliasProps) {
                       body: {
                         actions,
                       },
+                      dataSourceId,
                     },
                   });
                 }
@@ -228,6 +241,7 @@ export default function CreateAlias(props: ICreateAliasProps) {
                   data: {
                     index: values.indexArray,
                     name: values.alias,
+                    dataSourceId,
                   },
                 });
               }

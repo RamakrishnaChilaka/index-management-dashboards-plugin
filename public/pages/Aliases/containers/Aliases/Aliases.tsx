@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { Component, useContext, useState } from "react";
-import _, { isEqual } from "lodash";
-import { RouteComponentProps } from "react-router-dom";
-import queryString from "query-string";
+import React, { Component, useContext, useState } from 'react';
+import _, { isEqual } from 'lodash';
+import { RouteComponentProps } from 'react-router-dom';
+import queryString from 'query-string';
 import {
   EuiHorizontalRule,
   EuiBasicTable,
@@ -24,21 +24,25 @@ import {
   EuiFormRow,
   EuiEmptyPrompt,
   EuiButton,
-} from "@elastic/eui";
-import { ContentPanel, ContentPanelActions } from "../../../../components/ContentPanel";
-import { DEFAULT_PAGE_SIZE_OPTIONS, DEFAULT_QUERY_PARAMS } from "../../utils/constants";
-import CommonService from "../../../../services/CommonService";
-import { IAlias } from "../../interface";
-import { BREADCRUMBS, ROUTES } from "../../../../utils/constants";
-import { CoreServicesContext } from "../../../../components/core_services";
-import { ServicesContext } from "../../../../services";
-import IndexControls, { SearchControlsProps } from "../../components/IndexControls";
-import CreateAlias from "../CreateAlias";
-import AliasesActions from "../AliasActions";
-import { CoreStart } from "opensearch-dashboards/public";
+} from '@elastic/eui';
+import { ContentPanel, ContentPanelActions } from '../../../../components/ContentPanel';
+import { DEFAULT_PAGE_SIZE_OPTIONS, DEFAULT_QUERY_PARAMS } from '../../utils/constants';
+import CommonService from '../../../../services/CommonService';
+import { IAlias } from '../../interface';
+import { BREADCRUMBS, ROUTES } from '../../../../utils/constants';
+import { CoreServicesContext } from '../../../../components/core_services';
+import { ServicesContext } from '../../../../services';
+import IndexControls, { SearchControlsProps } from '../../components/IndexControls';
+import CreateAlias from '../CreateAlias';
+import AliasesActions from '../AliasActions';
+import { CoreStart, MountPoint } from 'opensearch-dashboards/public';
+import { TopNavMenu } from '../../../../../../../src/plugins/navigation/public';
+import { SavedObjectsClientContract } from 'opensearch-dashboards/server';
 
 interface AliasesProps extends RouteComponentProps {
   commonService: CommonService;
+  savedObjects: SavedObjectsClientContract;
+  setActionMenu: (menuMount: MountPoint | undefined) => void;
 }
 
 interface AliasesState {
@@ -55,7 +59,10 @@ interface AliasesState {
   loading: boolean;
   aliasCreateFlyoutVisible: boolean;
   aliasEditFlyoutVisible: boolean;
+  dataSourceId: string;
+  dataSourceLabel: string;
 }
+
 
 function IndexNameDisplay(props: { indices: string[]; alias: string }) {
   const [hide, setHide] = useState(true);
@@ -67,9 +74,10 @@ function IndexNameDisplay(props: { indices: string[]; alias: string }) {
 
   return (
     <div>
-      <span>{props.indices.slice(0, 3).join(", ")}</span>
+      <span>{props.indices.slice(0, 3).join(', ')}</span>
       {props.indices.length <= 3 ? null : (
-        <EuiLink style={{ marginLeft: 8 }} data-test-subj={`${props.indices.length - 3} more`} onClick={() => setHide(!hide)}>
+        <EuiLink style={{ marginLeft: 8 }} data-test-subj={`${props.indices.length - 3} more`}
+                 onClick={() => setHide(!hide)}>
           {props.indices.length - 3} more
         </EuiLink>
       )}
@@ -87,8 +95,8 @@ function IndexNameDisplay(props: { indices: string[]; alias: string }) {
               data-test-subj="indices-table"
               columns={[
                 {
-                  name: "Index",
-                  field: "index",
+                  name: 'Index',
+                  field: 'index',
                 },
               ]}
               items={props.indices.slice(index * size, (index + 1) * size).map((index) => ({ index }))}
@@ -113,6 +121,7 @@ const defaultFilter = {
 
 class Aliases extends Component<AliasesProps, AliasesState> {
   static contextType = CoreServicesContext;
+
   constructor(props: AliasesProps) {
     super(props);
     const {
@@ -122,6 +131,8 @@ class Aliases extends Component<AliasesProps, AliasesState> {
       sortField = DEFAULT_QUERY_PARAMS.sortField,
       sortDirection = DEFAULT_QUERY_PARAMS.sortDirection,
       status = DEFAULT_QUERY_PARAMS.status,
+      dataSourceId = "",
+      dataSourceLabel = ""
     } = queryString.parse(props.history.location.search) as {
       from: string;
       size: string;
@@ -129,6 +140,8 @@ class Aliases extends Component<AliasesProps, AliasesState> {
       sortField: keyof IAlias;
       sortDirection: Direction;
       status: string;
+      dataSourceId: string;
+      dataSourceLabel: string;
     };
     this.state = {
       ...defaultFilter,
@@ -145,6 +158,8 @@ class Aliases extends Component<AliasesProps, AliasesState> {
       aliasCreateFlyoutVisible: false,
       aliasEditFlyoutVisible: false,
       editingItem: null,
+      dataSourceId,
+      dataSourceLabel,
     };
 
     this.getAliases = _.debounce(this.getAliases, 500, { leading: true });
@@ -164,6 +179,14 @@ class Aliases extends Component<AliasesProps, AliasesState> {
     }, {} as AliasesState);
   };
 
+  async componentDidUpdate(prevProps: AliasesProps, prevState: AliasesState) {
+    const prevQuery = this.getQueryState(prevState);
+    const currQuery = this.getQueryState(this.state);
+    if (!_.isEqual(prevQuery, currQuery)) {
+      await this.getAliases();
+    }
+  }
+
   groupResponse = (array: IAlias[]) => {
     const groupedMap: Record<string, IAlias & { order: number; writeIndex: string }> = {};
     array.forEach((item, index) => {
@@ -173,10 +196,10 @@ class Aliases extends Component<AliasesProps, AliasesState> {
         indexArray: [],
       };
       groupedMap[item.alias].indexArray.push(item.index);
-      if (item.is_write_index === "true") {
+      if (item.is_write_index === 'true') {
         groupedMap[item.alias].writeIndex = item.index;
       } else if (!groupedMap[item.alias].writeIndex) {
-        groupedMap[item.alias].writeIndex = "";
+        groupedMap[item.alias].writeIndex = '';
       }
     });
     const result = Object.values(groupedMap).map((item) => {
@@ -204,17 +227,18 @@ class Aliases extends Component<AliasesProps, AliasesState> {
     history.replace({ ...this.props.location, search: queryParamsString });
 
     const payload: any = {
-      format: "json",
+      format: 'json',
       name: `*${queryObject.search}*`,
       s: `${queryObject.sortField}:${queryObject.sortDirection}`,
       expand_wildcards: status,
+      dataSourceId: this.state.dataSourceId
     };
     if (!status) {
       delete payload.expand_wildcards;
     }
 
     const getAliasesResponse = await commonService.apiCaller<IAlias[]>({
-      endpoint: "cat.aliases",
+      endpoint: 'cat.aliases',
       data: payload,
     });
 
@@ -243,12 +267,12 @@ class Aliases extends Component<AliasesProps, AliasesState> {
     const { field: sortField, direction: sortDirection } = sort || {};
     this.setState(
       {
-        from: "" + page,
-        size: "" + size,
+        from: '' + page,
+        size: '' + size,
         sortField: sortField || DEFAULT_QUERY_PARAMS.sortField,
         sortDirection: sortDirection as Direction,
       },
-      () => this.getAliases()
+      () => this.getAliases(),
     );
   };
 
@@ -256,8 +280,8 @@ class Aliases extends Component<AliasesProps, AliasesState> {
     this.setState({ selectedItems });
   };
 
-  onSearchChange = (params: Parameters<SearchControlsProps["onSearchChange"]>[0]): void => {
-    this.setState({ from: "0", ...params }, () => this.getAliases());
+  onSearchChange = (params: Parameters<SearchControlsProps['onSearchChange']>[0]): void => {
+    this.setState({ from: '0', ...params }, () => this.getAliases());
   };
 
   render() {
@@ -281,197 +305,225 @@ class Aliases extends Component<AliasesProps, AliasesState> {
       onSelectionChange: this.onSelectionChange,
     };
     return (
-      <ContentPanel
-        actions={
-          <ContentPanelActions
-            actions={[
-              {
-                text: "",
-                children: (
-                  <AliasesActions
-                    onUpdateAlias={() => {
-                      this.setState({ aliasEditFlyoutVisible: true });
-                    }}
-                    selectedItems={this.state.selectedItems}
-                    onDelete={this.getAliases}
-                    history={this.props.history}
-                  />
-                ),
-              },
-              {
-                text: "Create alias",
-                buttonProps: {
-                  fill: true,
-                  onClick: () => {
-                    this.setState({
-                      aliasCreateFlyoutVisible: true,
-                    });
-                  },
-                },
-              },
-            ]}
-          />
-        }
-        bodyStyles={{ padding: "initial" }}
-        title={
-          <>
-            <EuiTitle>
-              <span>Aliases</span>
-            </EuiTitle>
-            <EuiFormRow
-              fullWidth
-              helpText={
-                <div style={{ width: "50%" }}>
-                  An alias is a virtual index name that can point to one or more indexes. If your data is spread across multiple indexes,
-                  you can create and query an alias instead of keeping track of which indexes to query.{" "}
-                  <EuiLink target="_blank" external href={(this.context as CoreStart).docLinks.links.opensearch.indexAlias.base}>
-                    Learn more
-                  </EuiLink>
-                </div>
-              }
-            >
-              <></>
-            </EuiFormRow>
-          </>
-        }
-      >
-        <IndexControls
-          value={{
-            search: this.state.search,
-            status: this.state.status,
+      <>
+        <TopNavMenu
+          appName={'test'}
+          setMenuMountPoint={this.props.setActionMenu}
+          showDataSourcePicker={true}
+          dataSourceCallBackFunc={(dataSourceId: string, dataSourceLabel: string) => {
+            console.log('data source id is ', dataSourceId, dataSourceLabel);
+            this.setState({ dataSourceId, dataSourceLabel });
           }}
-          onSearchChange={this.onSearchChange}
+          disableDataSourcePicker={false}
+          notifications={this.context.notifications.toasts}
+          savedObjects={this.props.savedObjects}
+          defaultOption={(() => {
+            if (this.state.dataSourceId && this.state.dataSourceId !== '') {
+              const y = [{
+                id: this.state.dataSourceId,
+                label: this.state.dataSourceLabel,
+              }];
+              console.log('state is ', y);
+              return y;
+            }
+            return undefined;
+          })()}
         />
-        <EuiHorizontalRule margin="xs" />
-
-        <EuiBasicTable
-          data-test-subj="aliases-table"
-          loading={this.state.loading}
-          columns={[
-            {
-              field: "alias",
-              name: "Alias name",
-              sortable: true,
-              render: (value: string, record) => {
-                return (
-                  <EuiLink
-                    data-test-subj={`aliasDetail-${value}`}
-                    onClick={() =>
-                      this.setState({
-                        editingItem: record,
-                        aliasEditFlyoutVisible: true,
-                      })
-                    }
-                  >
-                    {value}
-                  </EuiLink>
-                );
-              },
-            },
-            {
-              field: "writeIndex",
-              name: "Write index",
-              render: (value: string) => {
-                if (value) {
-                  return <EuiLink href={`#${ROUTES.INDEX_DETAIL}/${value}`}>{value}</EuiLink>;
-                }
-
-                return "-";
-              },
-            },
-            {
-              field: "indexArray",
-              name: "Index name",
-              render: (value: string[], record) => {
-                return <IndexNameDisplay indices={value} alias={record.alias} />;
-              },
-            },
-          ]}
-          isSelectable={true}
-          itemId="alias"
-          items={aliases}
-          onChange={this.onTableChange}
-          pagination={pagination}
-          selection={selection}
-          sorting={sorting}
-          noItemsMessage={
-            isEqual(
-              {
-                search: this.state.search,
-                status: this.state.status,
-              },
-              defaultFilter
-            ) ? (
-              <EuiEmptyPrompt
-                body={
-                  <EuiText>
-                    <p>You have no aliases.</p>
-                  </EuiText>
-                }
-                actions={[
-                  <EuiButton
-                    fill
-                    onClick={() => {
+        <ContentPanel
+          actions={
+            <ContentPanelActions
+              actions={[
+                {
+                  text: '',
+                  children: (
+                    <AliasesActions
+                      onUpdateAlias={() => {
+                        this.setState({ aliasEditFlyoutVisible: true });
+                      }}
+                      selectedItems={this.state.selectedItems}
+                      onDelete={this.getAliases}
+                      history={this.props.history}
+                    />
+                  ),
+                },
+                {
+                  text: 'Create alias',
+                  buttonProps: {
+                    fill: true,
+                    onClick: () => {
                       this.setState({
                         aliasCreateFlyoutVisible: true,
                       });
-                    }}
-                  >
-                    Create alias
-                  </EuiButton>,
-                ]}
-              />
-            ) : (
-              <EuiEmptyPrompt
-                body={
-                  <EuiText>
-                    <p>There are no aliases matching your applied filters. Reset your filters to view your aliases.</p>
-                  </EuiText>
+                    },
+                  },
+                },
+              ]}
+            />
+          }
+          bodyStyles={{ padding: 'initial' }}
+          title={
+            <>
+              <EuiTitle>
+                <span>Aliases</span>
+              </EuiTitle>
+              <EuiFormRow
+                fullWidth
+                helpText={
+                  <div style={{ width: '50%' }}>
+                    An alias is a virtual index name that can point to one or more indexes. If your data is spread
+                    across multiple indexes,
+                    you can create and query an alias instead of keeping track of which indexes to query.{' '}
+                    <EuiLink target="_blank" external
+                             href={(this.context as CoreStart).docLinks.links.opensearch.indexAlias.base}>
+                      Learn more
+                    </EuiLink>
+                  </div>
                 }
-                actions={[
-                  <EuiButton
-                    fill
-                    onClick={() => {
-                      this.setState(defaultFilter, () => {
-                        this.getAliases();
-                      });
-                    }}
-                  >
-                    Reset filters
-                  </EuiButton>,
-                ]}
-              />
-            )
+              >
+                <></>
+              </EuiFormRow>
+            </>
           }
-        />
-        <CreateAlias
-          visible={this.state.aliasCreateFlyoutVisible}
-          onSuccess={() => {
-            this.getAliases();
-            this.setState({ aliasCreateFlyoutVisible: false });
-          }}
-          onClose={() => this.setState({ aliasCreateFlyoutVisible: false })}
-        />
-        <CreateAlias
-          visible={this.state.aliasEditFlyoutVisible}
-          onSuccess={() => {
-            this.getAliases();
-            this.setState({ editingItem: null, aliasEditFlyoutVisible: false });
-          }}
-          onClose={() =>
-            this.setState({
-              editingItem: null,
-              aliasEditFlyoutVisible: false,
-            })
-          }
-          alias={this.state.editingItem || this.state.selectedItems[0]}
-        />
-      </ContentPanel>
+        >
+          <IndexControls
+            value={{
+              search: this.state.search,
+              status: this.state.status,
+            }}
+            onSearchChange={this.onSearchChange}
+          />
+          <EuiHorizontalRule margin="xs" />
+
+          <EuiBasicTable
+            data-test-subj="aliases-table"
+            loading={this.state.loading}
+            columns={[
+              {
+                field: 'alias',
+                name: 'Alias name',
+                sortable: true,
+                render: (value: string, record) => {
+                  return (
+                    <EuiLink
+                      data-test-subj={`aliasDetail-${value}`}
+                      onClick={() =>
+                        this.setState({
+                          editingItem: record,
+                          aliasEditFlyoutVisible: true,
+                        })
+                      }
+                    >
+                      {value}
+                    </EuiLink>
+                  );
+                },
+              },
+              {
+                field: 'writeIndex',
+                name: 'Write index',
+                render: (value: string) => {
+                  if (value) {
+                    return <EuiLink href={`#${ROUTES.INDEX_DETAIL}/${value}`}>{value}</EuiLink>;
+                  }
+
+                  return '-';
+                },
+              },
+              {
+                field: 'indexArray',
+                name: 'Index name',
+                render: (value: string[], record) => {
+                  return <IndexNameDisplay indices={value} alias={record.alias} />;
+                },
+              },
+            ]}
+            isSelectable={true}
+            itemId="alias"
+            items={aliases}
+            onChange={this.onTableChange}
+            pagination={pagination}
+            selection={selection}
+            sorting={sorting}
+            noItemsMessage={
+              isEqual(
+                {
+                  search: this.state.search,
+                  status: this.state.status,
+                },
+                defaultFilter,
+              ) ? (
+                <EuiEmptyPrompt
+                  body={
+                    <EuiText>
+                      <p>You have no aliases.</p>
+                    </EuiText>
+                  }
+                  actions={[
+                    <EuiButton
+                      fill
+                      onClick={() => {
+                        this.setState({
+                          aliasCreateFlyoutVisible: true,
+                        });
+                      }}
+                    >
+                      Create alias
+                    </EuiButton>,
+                  ]}
+                />
+              ) : (
+                <EuiEmptyPrompt
+                  body={
+                    <EuiText>
+                      <p>There are no aliases matching your applied filters. Reset your filters to view your
+                        aliases.</p>
+                    </EuiText>
+                  }
+                  actions={[
+                    <EuiButton
+                      fill
+                      onClick={() => {
+                        this.setState(defaultFilter, () => {
+                          this.getAliases();
+                        });
+                      }}
+                    >
+                      Reset filters
+                    </EuiButton>,
+                  ]}
+                />
+              )
+            }
+          />
+          <CreateAlias
+            visible={this.state.aliasCreateFlyoutVisible}
+            onSuccess={() => {
+              this.getAliases();
+              this.setState({ aliasCreateFlyoutVisible: false });
+            }}
+            onClose={() => this.setState({ aliasCreateFlyoutVisible: false })}
+          />
+          <CreateAlias
+            visible={this.state.aliasEditFlyoutVisible}
+            onSuccess={() => {
+              this.getAliases();
+              this.setState({ editingItem: null, aliasEditFlyoutVisible: false });
+            }}
+            onClose={() =>
+              this.setState({
+                editingItem: null,
+                aliasEditFlyoutVisible: false,
+              })
+            }
+            alias={this.state.editingItem || this.state.selectedItems[0]}
+          />
+        </ContentPanel>
+      </>
     );
   }
 }
 
-export default function AliasContainer(props: Omit<AliasesProps, "commonService">) {
+export default function AliasContainer(props: Omit<AliasesProps, 'commonService'>) {
   const context = useContext(ServicesContext);
   return <Aliases {...props} commonService={context?.commonService as CommonService} />;
 }
