@@ -516,7 +516,11 @@ export default class Main extends Component<MainProps, object> {
                             path={ROUTES.TEMPLATES}
                             render={(props) => (
                               <div style={ROUTE_STYLE}>
-                                <Templates {...props} />
+                                <Templates
+                                  {...props}
+                                  savedObjects={core.savedObjects.client}
+                                  setActionMenu={this.props.setActionMenu}
+                                />
                               </div>
                             )}
                           />
@@ -556,7 +560,7 @@ export default class Main extends Component<MainProps, object> {
                             path={`${ROUTES.CREATE_TEMPLATE}/:template/:mode`}
                             render={(props) => (
                               <div style={ROUTE_STYLE}>
-                                <CreateIndexTemplate {...props} />
+                                <CreateIndexTemplate {...props} setActionMenu={this.props.setActionMenu}/>
                               </div>
                             )}
                           />
@@ -564,7 +568,7 @@ export default class Main extends Component<MainProps, object> {
                             path={`${ROUTES.CREATE_TEMPLATE}/:template`}
                             render={(props) => (
                               <div style={ROUTE_STYLE}>
-                                <CreateIndexTemplate {...props} />
+                                <CreateIndexTemplate {...props} setActionMenu={this.props.setActionMenu} />
                               </div>
                             )}
                           />
@@ -572,7 +576,7 @@ export default class Main extends Component<MainProps, object> {
                             path={ROUTES.CREATE_TEMPLATE}
                             render={(props) => (
                               <div style={ROUTE_STYLE}>
-                                <CreateIndexTemplate {...props} />
+                                <CreateIndexTemplate {...props} setActionMenu={this.props.setActionMenu}/>
                               </div>
                             )}
                           />

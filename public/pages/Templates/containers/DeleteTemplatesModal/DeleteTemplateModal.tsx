@@ -8,6 +8,7 @@ import { ServicesContext } from "../../../../services";
 import { CoreServicesContext } from "../../../../components/core_services";
 import { CoreStart } from "opensearch-dashboards/public";
 import DeleteModal from "../../../../components/DeleteModal";
+import { useLocation } from 'react-router';
 
 interface DeleteTemplateModalProps {
   selectedItems: string[];
@@ -20,6 +21,9 @@ export default function DeleteTemplateModal(props: DeleteTemplateModalProps) {
   const { onClose, visible, selectedItems, onDelete } = props;
   const services = useContext(ServicesContext);
   const coreServices = useContext(CoreServicesContext) as CoreStart;
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const dataSourceId = params.get('dataSourceId');
 
   const onConfirm = useCallback(async () => {
     if (services) {
@@ -28,6 +32,7 @@ export default function DeleteTemplateModal(props: DeleteTemplateModalProps) {
         data: {
           path: `/_index_template/${selectedItems.join(",")}`,
           method: "DELETE",
+          dataSourceId: dataSourceId,
         },
       });
       if (result && result.ok) {

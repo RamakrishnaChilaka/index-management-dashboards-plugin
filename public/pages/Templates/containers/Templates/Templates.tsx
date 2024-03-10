@@ -4,7 +4,7 @@
  */
 
 import React, { Component, useContext } from "react";
-import { debounce, isEqual } from "lodash";
+import _, { debounce, isEqual } from "lodash";
 import { Link, RouteComponentProps } from "react-router-dom";
 import queryString from "query-string";
 import {
@@ -33,15 +33,18 @@ import { CoreServicesContext } from "../../../../components/core_services";
 import { ServicesContext } from "../../../../services";
 import IndexControls, { SearchControlsProps } from "../../components/IndexControls";
 import TemplatesActions from "../TemplatesActions";
-import { CoreStart } from "opensearch-dashboards/public";
+import { CoreStart, MountPoint, SavedObjectsClientContract } from 'opensearch-dashboards/public';
 import { TemplateItemRemote } from "../../../../../models/interfaces";
 import { TemplateConvert } from "../../../CreateIndexTemplate/components/TemplateType";
 import AssociatedComponentsModal from "../AssociatedComponentsModal";
 import DeleteTemplate from "../../components/DeleteTemplate";
 import IndexPatternDisplay from "./IndexPatternDisplay";
+import { DataSourceMenu } from '../../../../../../../src/plugins/data_source_management/public';
 
 interface TemplatesProps extends RouteComponentProps {
   commonService: CommonService;
+  savedObjects: SavedObjectsClientContract;
+  setActionMenu: (menuMount: MountPoint | undefined) => void;
 }
 
 type TemplatesState = {
@@ -53,6 +56,8 @@ type TemplatesState = {
   selectedItems: ITemplate[];
   templates: ITemplate[];
   loading: boolean;
+  dataSourceId: string;
+  dataSourceLabel: string;
 } & SearchControlsProps["value"];
 
 const defaultFilter = {
@@ -69,12 +74,16 @@ class Templates extends Component<TemplatesProps, TemplatesState> {
       search = DEFAULT_QUERY_PARAMS.search,
       sortField = DEFAULT_QUERY_PARAMS.sortField,
       sortDirection = DEFAULT_QUERY_PARAMS.sortDirection,
+      dataSourceId = '',
+      dataSourceLabel = ''
     } = queryString.parse(props.history.location.search) as {
       from: string;
       size: string;
       search: string;
       sortField: keyof ITemplate;
       sortDirection: Direction;
+      dataSourceId: string;
+      dataSourceLabel: string;
     };
     this.state = {
       ...defaultFilter,
@@ -87,6 +96,8 @@ class Templates extends Component<TemplatesProps, TemplatesState> {
       selectedItems: [],
       templates: [],
       loading: false,
+      dataSourceId,
+      dataSourceLabel,
     };
 
     this.getTemplates = debounce(this.getTemplates, 500, { leading: true });
@@ -120,6 +131,7 @@ class Templates extends Component<TemplatesProps, TemplatesState> {
       format: "json",
       name: `*${queryObject.search}*`,
       s: `${queryObject.sortField}:${queryObject.sortDirection}`,
+      dataSourceId: this.state.dataSourceId,
     };
 
     let allTemplatesDetail: TemplateItemRemote[] = [];
@@ -134,6 +146,7 @@ class Templates extends Component<TemplatesProps, TemplatesState> {
       data: {
         method: "GET",
         path: "/_index_template/*",
+        dataSourceId: this.state.dataSourceId
       },
     });
 
@@ -199,8 +212,16 @@ class Templates extends Component<TemplatesProps, TemplatesState> {
     this.setState({ from: "0", ...params }, () => this.getTemplates());
   };
 
+  async componentDidUpdate(prevProps: AliasesProps, prevState: AliasesState) {
+    const prevQuery = this.getQueryState(prevState);
+    const currQuery = this.getQueryState(this.state);
+    if (!_.isEqual(prevQuery, currQuery)) {
+      await this.getTemplates();
+    }
+  }
+
   render() {
-    const { totalTemplates, from, size, sortField, sortDirection, templates } = this.state;
+    const { totalTemplates, from, size, sortField, sortDirection, templates  } = this.state;
 
     const pagination: Pagination = {
       pageIndex: Number(from),
@@ -220,6 +241,29 @@ class Templates extends Component<TemplatesProps, TemplatesState> {
       onSelectionChange: this.onSelectionChange,
     };
     return (
+      <>
+        <DataSourceMenu
+          appName={"Index State Management"}
+          setMenuMountPoint={this.props.setActionMenu}
+          showDataSourceSelectable={true}
+          dataSourceCallBackFunc={({id: dataSourceId, label: dataSourceLabel}) => {
+            this.setState({ dataSourceId, dataSourceLabel });
+          }}
+          disableDataSourceSelectable={false}
+          notifications={this.context.notifications}
+          savedObjects={this.props.savedObjects}
+          selectedOption={(() => {
+            if (this.state.dataSourceId && this.state.dataSourceId !== '') {
+              return [{
+                id: this.state.dataSourceId,
+                label: this.state.dataSourceLabel,
+              }];
+            }
+            return undefined;
+          })()}
+          fullWidth={false}
+          hideLocalCluster={false}
+        />
       <ContentPanel
         actions={
           <ContentPanelActions
@@ -227,7 +271,10 @@ class Templates extends Component<TemplatesProps, TemplatesState> {
               {
                 text: "",
                 children: (
-                  <TemplatesActions selectedItems={this.state.selectedItems} onDelete={this.getTemplates} history={this.props.history} />
+                  <TemplatesActions
+                    selectedItems={this.state.selectedItems}
+                    onDelete={this.getTemplates}
+                    history={this.props.history} />
                 ),
               },
               {
@@ -402,6 +449,7 @@ class Templates extends Component<TemplatesProps, TemplatesState> {
           }
         />
       </ContentPanel>
+      </>
     );
   }
 }

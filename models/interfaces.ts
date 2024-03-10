@@ -676,6 +676,7 @@ export interface IAPICaller {
   method?: string;
   data?: any;
   hideLog?: boolean;
+  dataSourceId?: string;
 }
 
 export interface IRecoveryItem {

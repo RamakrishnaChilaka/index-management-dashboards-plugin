@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { forwardRef, useContext, useEffect, useImperativeHandle, useRef, Ref, useState } from "react";
+import React, { forwardRef, useContext, useEffect, useImperativeHandle, useRef, Ref, useState } from 'react';
 import {
   EuiButton,
   EuiButtonEmpty,
@@ -23,7 +23,7 @@ import CustomFormRow from "../../../../components/CustomFormRow";
 import { ServicesContext } from "../../../../services";
 import { BrowserServices } from "../../../../models/interfaces";
 import { CoreServicesContext } from "../../../../components/core_services";
-import { CoreStart } from "opensearch-dashboards/public";
+import { CoreStart, MountPoint } from 'opensearch-dashboards/public';
 import { submitTemplate, getTemplate, simulateTemplate, formatTemplate, formatRemoteTemplateToEditTemplate } from "../../hooks";
 import { Modal } from "../../../../components/Modal";
 import { RouteComponentProps } from "react-router-dom";
@@ -43,13 +43,16 @@ import { diffJson } from "../../../../utils/helpers";
 import UnsavedChangesBottomBar from "../../../../components/UnsavedChangesBottomBar";
 import { IndexForm } from "../../../../containers/IndexForm";
 import { TABS_ENUM, tabs } from "../../constant";
+import { useLocation } from 'react-router';
+import { DataSourceMenu } from '../../../../../../../src/plugins/data_source_management/public';
 
 export interface TemplateDetailProps {
   templateName?: string;
   onCancel?: () => void;
   onSubmitSuccess?: (templateName: string) => void;
-  history: RouteComponentProps["history"];
-  location: RouteComponentProps["location"];
+  history: RouteComponentProps['history'];
+  location: RouteComponentProps['location'];
+  setActionMenu: (menuMount: MountPoint | undefined) => void;
 }
 
 const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => {
@@ -66,7 +69,7 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
   /* istanbul ignore next */
   if (searchObject.query.values) {
     try {
-      searchObject.query.values = JSON.parse((searchObject.query.values || "") as string);
+      searchObject.query.values = JSON.parse((searchObject.query.values || '') as string);
     } catch (e) {
       // do nothing
     }
@@ -80,12 +83,12 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
         flow: FLOW_ENUM.SIMPLE,
       },
     } as Partial<TemplateItem>,
-    searchObject.query.values as any
+    searchObject.query.values as any,
   );
   const field = useField({
     values: defaultValues,
     onChange(name, value) {
-      if (name === "data_stream" && value === undefined) {
+      if (name === 'data_stream' && value === undefined) {
         field.deleteValue(name);
       }
     },
@@ -99,7 +102,12 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
       },
     } as Partial<TemplateItem>,
   });
+  const coreService = useContext(CoreServicesContext);
   const destroyRef = useRef<boolean>(false);
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const dataSourceId = params.get('dataSourceId');
+  const dataSourceLabel = params.get('dataSourceLabel')
   const onSubmit = async () => {
     const { errors, values: templateDetail } = (await field.validatePromise()) || {};
     if (errors) {
@@ -107,10 +115,12 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
     }
     setIsSubmitting(true);
     const result = await submitTemplate({
-      value: templateDetail,
-      commonService: services.commonService,
-      isEdit,
-    });
+        value: templateDetail,
+        commonService: services.commonService,
+        isEdit,
+      },
+      dataSourceId,
+    );
     /* istanbul ignore next */
     if (destroyRef.current) {
       return;
@@ -128,10 +138,10 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
   useImperativeHandle(ref, () => field);
   const refreshTemplate = () => {
     getTemplate({
-      templateName: templateName || "",
+      templateName: templateName || '',
       coreService: coreServices,
       commonService: services.commonService,
-    })
+    }, dataSourceId)
       .then((template) => {
         oldValue.current = JSON.parse(JSON.stringify(template));
         field.resetValues(template);
@@ -139,7 +149,7 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
         simulateTemplate({
           commonService: services.commonService,
           template: field.getValues(),
-        }).then((simulateResult) => {
+        }, dataSourceId).then((simulateResult) => {
           if (simulateResult.ok) {
             simulateField.resetValues(simulateResult.response);
           } else {
@@ -175,7 +185,7 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
           const result = await simulateTemplate({
             template: field.getValues(),
             commonService: services.commonService,
-          });
+          }, dataSourceId);
           if (result.ok) {
             simulateField.resetValues(result.response);
             setPreviewFlyoutVisible(true);
@@ -193,10 +203,27 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
 
   return (
     <>
+      <DataSourceMenu
+        appName={"Index State Management"}
+        setMenuMountPoint={props.setActionMenu}
+        showDataSourceSelectable={true}
+        disableDataSourceSelectable={true}
+        notifications={coreService?.notifications}
+        savedObjects={coreService?.savedObjects.client}
+        selectedOption={(() => {
+          if (dataSourceId && dataSourceId !== '') {
+            return [{
+              id: dataSourceId,
+              label: dataSourceLabel,
+            }];
+          }
+          return undefined;
+        })()}
+      />
       <EuiFlexGroup alignItems="center">
         <EuiFlexItem>
           <EuiTitle size="l">
-            {isEdit ? <h1 title={values.name}>{templateName}</h1> : <h1>{isEdit ? "Edit" : "Create"} template</h1>}
+            {isEdit ? <h1 title={values.name}>{templateName}</h1> : <h1>{isEdit ? 'Edit' : 'Create'} template</h1>}
           </EuiTitle>
           {isEdit ? null : (
             <CustomFormRow
@@ -204,7 +231,7 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
               label=""
               helpText={
                 <div>
-                  Index templates let you initialize new indexes with predefined mappings and settings.{" "}
+                  Index templates let you initialize new indexes with predefined mappings and settings.{' '}
                   <EuiLink external target="_blank" href={coreServices.docLinks.links.opensearch.indexTemplates.base}>
                     Learn more
                   </EuiLink>
@@ -216,7 +243,7 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
           )}
         </EuiFlexItem>
         {isEdit ? (
-          <EuiFlexItem grow={false} style={{ flexDirection: "row" }}>
+          <EuiFlexItem grow={false} style={{ flexDirection: 'row' }}>
             <EuiButton
               style={{ marginRight: 20 }}
               onClick={() => {
@@ -226,12 +253,12 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
                 };
                 Modal.show({
                   locale: {
-                    ok: "Close",
+                    ok: 'Close',
                   },
                   style: {
                     width: 800,
                   },
-                  "data-test-subj": "templateJSONDetailModal",
+                  'data-test-subj': 'templateJSONDetailModal',
                   title: values.name,
                   content: (
                     <EuiCodeBlock language="json" isCopyable>
@@ -301,14 +328,14 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
       <ContentPanel
         title={
           isEdit && selectedTabId === TABS_ENUM.SUMMARY
-            ? "Preview template"
+            ? 'Preview template'
             : values._meta?.flow === FLOW_ENUM.COMPONENTS
-            ? "Override template definition"
-            : "Template definition"
+              ? 'Override template definition'
+              : 'Template definition'
         }
         subTitleText={
           (!isEdit || selectedTabId !== TABS_ENUM.SUMMARY) && values._meta?.flow === FLOW_ENUM.COMPONENTS
-            ? "Provide additional configurations such as index aliases, settings, and mappings. Configurations defined in this section will take precedent if they overlap with the associated component templates."
+            ? 'Provide additional configurations such as index aliases, settings, and mappings. Configurations defined in this section will take precedent if they overlap with the associated component templates.'
             : undefined
         }
         accordion={(!isEdit || selectedTabId !== TABS_ENUM.SUMMARY) && values._meta?.flow === FLOW_ENUM.COMPONENTS}
@@ -329,7 +356,7 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
             width: 800,
           }}
           locale={{
-            ok: "Close",
+            ok: 'Close',
           }}
           maxWidth={false}
           onClose={() => setPreviewFlyoutVisible(false)}
@@ -342,7 +369,8 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
           <BottomBar>
             <EuiFlexGroup alignItems="center" justifyContent="flexEnd">
               <EuiFlexItem grow={false}>
-                <EuiButtonEmpty onClick={onCancel} color="ghost" iconType="cross" size="s" data-test-subj="CreateIndexTemplateCancelButton">
+                <EuiButtonEmpty onClick={onCancel} color="ghost" iconType="cross" size="s"
+                                data-test-subj="CreateIndexTemplateCancelButton">
                   Cancel
                 </EuiButtonEmpty>
               </EuiFlexItem>
@@ -375,7 +403,7 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
         <UnsavedChangesBottomBar
           submitButtonDataTestSubj="updateTemplateButton"
           cancelButtonprops={{
-            "data-test-subj": "CancelUpdateTemplateButton",
+            'data-test-subj': 'CancelUpdateTemplateButton',
           }}
           unsavedCount={diffJson(formatTemplate(oldValue.current), formatTemplate(values))}
           onClickCancel={async () => {
@@ -385,7 +413,7 @@ const TemplateDetail = (props: TemplateDetailProps, ref: Ref<FieldInstance>) => 
                   ...oldValue.current,
                   template: IndexForm.transformIndexDetailToRemote(oldValue.current?.template),
                 },
-              })
+              }),
             );
           }}
           onClickSubmit={async () => {

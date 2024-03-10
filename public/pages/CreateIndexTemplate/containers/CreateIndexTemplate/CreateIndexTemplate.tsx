@@ -9,11 +9,19 @@ import { isEqual } from "lodash";
 import TemplateDetail from "../TemplateDetail";
 import { BREADCRUMBS, ROUTES } from "../../../../utils/constants";
 import { CoreServicesContext } from "../../../../components/core_services";
+import { MountPoint } from 'opensearch-dashboards/public';
 
-interface CreateIndexTemplateProps extends RouteComponentProps<{ template?: string; mode?: string }> {}
+interface CreateIndexTemplateProps extends RouteComponentProps<{ template?: string; mode?: string }> {
+  setActionMenu: (menuMount: MountPoint | undefined) => void;
+}
 
 export default class CreateIndexTemplate extends Component<CreateIndexTemplateProps> {
   static contextType = CoreServicesContext;
+
+  constructor(props) {
+    super(props);
+
+  }
 
   get template() {
     return this.props.match.params.template;
@@ -59,12 +67,14 @@ export default class CreateIndexTemplate extends Component<CreateIndexTemplatePr
   render() {
     return (
       <div style={{ padding: "0px 50px" }}>
+
         <TemplateDetail
           history={this.props.history}
           location={this.props.location}
           templateName={this.template}
           onCancel={this.onCancel}
           onSubmitSuccess={() => this.props.history.push(ROUTES.TEMPLATES)}
+          setActionMenu={this.props.setActionMenu}
         />
       </div>
     );

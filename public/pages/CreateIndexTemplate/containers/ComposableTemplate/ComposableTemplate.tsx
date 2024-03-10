@@ -35,6 +35,7 @@ import ComponentTemplateDetail, { IComponentTemplateDetailInstance } from "../..
 import { CoreServicesContext } from "../../../../components/core_services";
 import { CoreStart } from "opensearch-dashboards/public";
 import FilterGroup from "../../../../components/FilterGroup";
+import { useLocation } from 'react-router';
 
 export default function ComposableTemplate(props: SubDetailProps) {
   const { field, readonly, history } = props;
@@ -47,6 +48,9 @@ export default function ComposableTemplate(props: SubDetailProps) {
   const services = useContext(ServicesContext) as BrowserServices;
   const coreServices = useContext(CoreServicesContext) as CoreStart;
   const componentCreateRef = useRef<IComponentTemplateDetailInstance>(null);
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const dataSourceId = params.get('dataSourceId');
   const reloadAllComposableTemplates = () =>
     services.commonService
       .apiCaller<{
@@ -56,6 +60,7 @@ export default function ComposableTemplate(props: SubDetailProps) {
         data: {
           method: "GET",
           path: `/_component_template/*`,
+          dataSourceId: dataSourceId,
         },
         hideLog: true,
       })

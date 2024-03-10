@@ -35,7 +35,7 @@ import { MountPoint } from "opensearch-dashboards/public";
 import { DataSourceMenu } from '../../../../../../../src/plugins/data_source_management/public';
 
 export interface IndexDetailModalProps extends RouteComponentProps<{ index: string }> {
-  setActionMenu: (menuMount: MountPoint | undefined) => void
+  setActionMenu: (menuMount: MountPoint | undefined) => void;
 }
 
 export default function IndexDetail(props: IndexDetailModalProps) {

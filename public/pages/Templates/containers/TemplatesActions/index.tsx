@@ -9,6 +9,7 @@ import SimplePopover from "../../../../components/SimplePopover";
 import DeleteIndexModal from "../DeleteTemplatesModal";
 import { ITemplate } from "../../interface";
 import { ROUTES } from "../../../../utils/constants";
+import { useLocation } from 'react-router';
 
 export interface TemplatesActionsProps {
   selectedItems: ITemplate[];
@@ -19,6 +20,10 @@ export interface TemplatesActionsProps {
 export default function TemplatesActions(props: TemplatesActionsProps) {
   const { selectedItems, onDelete } = props;
   const [deleteIndexModalVisible, setDeleteIndexModalVisible] = useState(false);
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const dataSourceId = params.get('dataSourceId');
+  const dataSourceLabel = params.get("dataSourceLabel");
 
   const onDeleteIndexModalClose = () => {
     setDeleteIndexModalVisible(false);
@@ -50,7 +55,7 @@ export default function TemplatesActions(props: TemplatesActionsProps) {
                   name: "Edit",
                   disabled: selectedItems.length !== 1,
                   "data-test-subj": "editAction",
-                  onClick: () => props.history.push(`${ROUTES.CREATE_TEMPLATE}/${selectedItems[0].name}`),
+                  onClick: () => props.history.push(`${ROUTES.CREATE_TEMPLATE}/${selectedItems[0].name}?dataSourceId=${dataSourceId}&dataSourceLabel=${dataSourceLabel}`),
                 },
                 {
                   name: "Delete",

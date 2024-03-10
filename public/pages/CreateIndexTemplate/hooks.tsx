@@ -73,7 +73,7 @@ const formatTemplateToSubmitPayload = (value: TemplateItem): Omit<TemplateItemRe
   return bodyPayload;
 };
 
-export const submitTemplate = async (props: { value: TemplateItem; isEdit: boolean; commonService: CommonService }) => {
+export const submitTemplate = async (props: { value: TemplateItem; isEdit: boolean; commonService: CommonService }, dataSourceId: string) => {
   const { name } = props.value;
   return await props.commonService.apiCaller({
     endpoint: "transport.request",
@@ -81,6 +81,7 @@ export const submitTemplate = async (props: { value: TemplateItem; isEdit: boole
       method: props.isEdit ? "POST" : "PUT",
       path: `/_index_template/${name}`,
       body: formatTemplateToSubmitPayload(props.value),
+      dataSourceId: dataSourceId
     },
   });
 };
@@ -89,7 +90,7 @@ export const getTemplate = async (props: {
   templateName: string;
   commonService: CommonService;
   coreService: CoreStart;
-}): Promise<TemplateItemEdit> => {
+}, dataSourceId: string): Promise<TemplateItemEdit> => {
   const response = await props.commonService.apiCaller<{
     index_templates: { name: string; index_template: TemplateItemRemote }[];
   }>({
@@ -97,6 +98,7 @@ export const getTemplate = async (props: {
     data: {
       method: "GET",
       path: `/_index_template/${props.templateName}?flat_settings=true`,
+      dataSourceId: dataSourceId,
     },
   });
   let error: string = "";
@@ -119,7 +121,7 @@ export const getTemplate = async (props: {
   throw new Error(error);
 };
 
-export const simulateTemplate = (props: { template: TemplateItem; commonService: CommonService }) => {
+export const simulateTemplate = (props: { template: TemplateItem; commonService: CommonService }, dataSourceId: string) => {
   const { name, index_patterns, priority } = props.template;
   const payload = formatTemplateToSubmitPayload({
     ...props.template,
@@ -140,6 +142,7 @@ export const simulateTemplate = (props: { template: TemplateItem; commonService:
         method: "POST",
         path: `/_index_template/_simulate`,
         body: payload,
+        dataSourceId: dataSourceId,
       },
     })
     .then((result) => {
