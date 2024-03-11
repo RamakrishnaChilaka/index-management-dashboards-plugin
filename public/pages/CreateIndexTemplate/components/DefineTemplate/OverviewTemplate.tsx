@@ -10,6 +10,7 @@ import DescriptionListHoz from "../../../../components/DescriptionListHoz";
 import { ROUTES } from "../../../../utils/constants";
 import { TemplateConvert } from "../TemplateType";
 import { TemplateItem } from "../../../../../models/interfaces";
+import { useLocation } from 'react-router';
 
 export default function OverviewTemplate(props: SubDetailProps) {
   const { field, withoutPanel, columns } = props;

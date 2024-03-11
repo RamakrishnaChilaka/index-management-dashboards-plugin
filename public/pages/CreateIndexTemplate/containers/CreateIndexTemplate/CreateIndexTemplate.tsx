@@ -67,7 +67,6 @@ export default class CreateIndexTemplate extends Component<CreateIndexTemplatePr
   render() {
     return (
       <div style={{ padding: "0px 50px" }}>
-
         <TemplateDetail
           history={this.props.history}
           location={this.props.location}
