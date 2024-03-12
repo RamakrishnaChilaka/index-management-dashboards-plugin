@@ -29,10 +29,11 @@ export interface IndicesActionsProps extends Pick<RouteComponentProps, "history"
   onDelete: () => void;
   onClose: () => void;
   onShrink: () => void;
+  dataSourceId: string;
 }
 
 export default function IndicesActions(props: IndicesActionsProps) {
-  const { selectedItems, onDelete, onClose } = props;
+  const { selectedItems, onDelete, onClose, dataSourceId } = props;
   const [deleteIndexModalVisible, setDeleteIndexModalVisible] = useState(false);
   const [closeIndexModalVisible, setCloseIndexModalVisible] = useState(false);
   const [clearCacheModalVisible, setClearCacheModalVisible] = useState(false);
@@ -52,6 +53,7 @@ export default function IndicesActions(props: IndicesActionsProps) {
       endpoint: "indices.delete",
       data: {
         index: indexPayload,
+        dataSourceId: dataSourceId,
       },
     });
     if (result && result.ok) {

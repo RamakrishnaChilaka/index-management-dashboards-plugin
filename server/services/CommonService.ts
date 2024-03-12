@@ -10,15 +10,12 @@ import {
   OpenSearchDashboardsResponseFactory,
   ILegacyCustomClusterClient,
   IOpenSearchDashboardsResponse,
-  RequestHandlerContext,
 } from "../../../../src/core/server";
 import { IAPICaller } from "../../models/interfaces";
 
 const VALID_METHODS = ["HEAD", "GET", "POST", "PUT", "DELETE"];
 
-export interface ICommonCaller {
-  <T>(arg: any): T;
-}
+export type ICommonCaller = <T>(arg: any) => T;
 
 export default class CommonService {
   osDriver: ILegacyCustomClusterClient;
@@ -28,16 +25,30 @@ export default class CommonService {
   }
 
   apiCaller = async (
-    context: RequestHandlerContext,
+    context: any,
     request: OpenSearchDashboardsRequest,
     response: OpenSearchDashboardsResponseFactory
   ): Promise<IOpenSearchDashboardsResponse<ServerResponse<AcknowledgedResponse>>> => {
     const useQuery = !request.body;
     const usedParam = (useQuery ? request.query : request.body) as IAPICaller;
     const { endpoint, data, hideLog } = usedParam || {};
+
+    console.log("request123 is ", request.body);
+
     try {
-      const { callAsCurrentUser: callWithRequest } = this.osDriver.asScoped(request);
+      // const { callAsCurrentUser: callWithRequest } = this.osDriver.asScoped(request);
       const finalData = data;
+      const { dataSourceId = "" } = finalData;
+      console.log("dataSourceId inside commonservice ", dataSourceId);
+      let callWithRequest;
+      if (!dataSourceId || dataSourceId.trim().length == 0) {
+        // empty or null or undefined string
+        callWithRequest = this.osDriver.asScoped(request).callAsCurrentUser;
+      } else {
+        callWithRequest = context.dataSource.opensearch.legacy.getClient(dataSourceId).callAPI;
+      }
+      delete finalData.dataSourceId;
+      console.log("finalData inside-commonservice ", finalData);
 
       /**
        * The endpoint must not be an empty string, reference from proxy caller
@@ -74,6 +85,7 @@ export default class CommonService {
         }
       }
 
+      console.log("data is ", data, endpoint);
       const payload = useQuery ? JSON.parse(finalData || "{}") : finalData;
       const commonCallerResponse = await callWithRequest(endpoint, payload || {});
       return response.custom({

@@ -30,6 +30,8 @@ import { Modal } from "../../../../components/Modal";
 import { IFinalDetail } from "./interface";
 import { OVERVIEW_DISPLAY_INFO } from "./constants";
 import { EVENT_MAP, destroyListener, listenEvent } from "../../../../JobHandler";
+import { DataSourceMenuContext } from "../../../../services/DataSourceMenuContext";
+import { useHistory } from "react-router";
 
 export interface IndexDetailModalProps extends RouteComponentProps<{ index: string }> {}
 
@@ -50,6 +52,17 @@ export default function IndexDetail(props: IndexDetailModalProps) {
     };
   }, [record, detail]);
   const services = useContext(ServicesContext) as BrowserServices;
+  const dataSourceMenuProps = useContext(DataSourceMenuContext);
+  const { dataSourceId, dataSourceLabel, multiDataSourceEnabled } = dataSourceMenuProps;
+  if (multiDataSourceEnabled) {
+    // mds flag can't change while the app is loaded
+    const history = useHistory();
+    useEffect(() => {
+      history.replace({
+        search: `?dataSourceId=${dataSourceId}&dataSourceLabel=${dataSourceLabel}`,
+      });
+    }, [dataSourceId, dataSourceLabel]);
+  }
 
   const fetchIndicesDetail = () =>
     services.commonService
@@ -57,6 +70,7 @@ export default function IndexDetail(props: IndexDetailModalProps) {
         endpoint: "indices.get",
         data: {
           index,
+          dataSourceId,
         },
       })
       .then((res) => {
@@ -70,6 +84,7 @@ export default function IndexDetail(props: IndexDetailModalProps) {
         };
       })
       .then((res) => {
+        console.log("res1 is ", res);
         if (res && res.ok) {
           setDetail(res.response);
         } else {
@@ -82,6 +97,7 @@ export default function IndexDetail(props: IndexDetailModalProps) {
 
   const fetchCatIndexDetail = async (params: { showDataStreams: "true" | "false" }) => {
     const result = await services.indexService.getIndices({
+      dataSourceId: dataSourceId,
       terms: index,
       from: 0,
       size: 10,
@@ -146,7 +162,12 @@ export default function IndexDetail(props: IndexDetailModalProps) {
             <EuiSpacer />
             <ContentPanel title="Index settings" titleSize="s">
               <EuiSpacer size="s" />
-              <IndexFormWrapper {...indexFormReadonlyCommonProps} key={IndicesUpdateMode.settings} mode={IndicesUpdateMode.settings} />
+              <IndexFormWrapper
+                {...indexFormReadonlyCommonProps}
+                key={IndicesUpdateMode.settings}
+                mode={IndicesUpdateMode.settings}
+                dataSourceId={dataSourceId}
+              />
             </ContentPanel>
           </>
         ),
@@ -188,7 +209,12 @@ export default function IndexDetail(props: IndexDetailModalProps) {
               }
             >
               <EuiSpacer size="s" />
-              <IndexFormWrapper {...indexFormReadonlyCommonProps} key={IndicesUpdateMode.mappings} mode={IndicesUpdateMode.mappings} />
+              <IndexFormWrapper
+                {...indexFormReadonlyCommonProps}
+                key={IndicesUpdateMode.mappings}
+                mode={IndicesUpdateMode.mappings}
+                dataSourceId={dataSourceId}
+              />
             </ContentPanel>
           </>
         ),
@@ -202,7 +228,12 @@ export default function IndexDetail(props: IndexDetailModalProps) {
             <EuiSpacer />
             <ContentPanel title="Index alias" titleSize="s">
               <EuiSpacer size="s" />
-              <IndexFormWrapper {...indexFormReadonlyCommonProps} key={IndicesUpdateMode.alias} mode={IndicesUpdateMode.alias} />
+              <IndexFormWrapper
+                {...indexFormReadonlyCommonProps}
+                key={IndicesUpdateMode.alias}
+                mode={IndicesUpdateMode.alias}
+                dataSourceId={dataSourceId}
+              />
             </ContentPanel>
           </>
         ),
