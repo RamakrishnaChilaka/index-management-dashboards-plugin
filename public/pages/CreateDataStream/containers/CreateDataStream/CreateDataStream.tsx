@@ -9,8 +9,11 @@ import DataStreamDetail from "../DataStreamDetail";
 import { BREADCRUMBS, ROUTES } from "../../../../utils/constants";
 import { CoreServicesContext } from "../../../../components/core_services";
 import { isEqual } from "lodash";
+import { MountPoint } from 'opensearch-dashboards/public';
 
-interface CreateDataStreamProps extends RouteComponentProps<{ dataStream?: string }> {}
+interface CreateDataStreamProps extends RouteComponentProps<{ dataStream?: string }> {
+  setActionMenu: (menuMount: MountPoint | undefined) => void;
+}
 
 export default class CreateDataStream extends Component<CreateDataStreamProps> {
   static contextType = CoreServicesContext;
@@ -55,6 +58,7 @@ export default class CreateDataStream extends Component<CreateDataStreamProps> {
           dataStream={this.dataStream}
           onCancel={this.onCancel}
           onSubmitSuccess={() => this.props.history.push(ROUTES.DATA_STREAMS)}
+          setActionMenu={this.props.setActionMenu}
         />
       </div>
     );

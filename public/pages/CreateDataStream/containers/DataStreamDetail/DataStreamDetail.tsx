@@ -11,7 +11,7 @@ import CustomFormRow from "../../../../components/CustomFormRow";
 import { ServicesContext } from "../../../../services";
 import { BrowserServices } from "../../../../models/interfaces";
 import { CoreServicesContext } from "../../../../components/core_services";
-import { CoreStart } from "opensearch-dashboards/public";
+import { CoreStart, MountPoint } from 'opensearch-dashboards/public';
 import { getAllDataStreamTemplate, createDataStream, getDataStream } from "./hooks";
 import { Modal } from "../../../../components/Modal";
 import JSONEditor from "../../../../components/JSONEditor";
@@ -25,6 +25,8 @@ import { ContentPanel } from "../../../../components/ContentPanel";
 import { DataStreamInEdit } from "../../interface";
 import BackingIndices from "../BackingIndices";
 import DataStreamsActions from "../../../DataStreams/containers/DataStreamsActions";
+import { useLocation } from 'react-router';
+import { DataSourceMenu } from '../../../../../../../src/plugins/data_source_management/public';
 
 export interface DataStreamDetailProps {
   dataStream?: string;
@@ -32,9 +34,15 @@ export interface DataStreamDetailProps {
   onSubmitSuccess?: (templateName: string) => void;
   readonly?: boolean;
   history: RouteComponentProps["history"];
+  setActionMenu: (menuMount: MountPoint | undefined) => void;
 }
 
 const DataStreamDetail = (props: DataStreamDetailProps, ref: Ref<FieldInstance>) => {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const dataSourceId = params.get('dataSourceId');
+  const dataSourceLabel = params.get('dataSourceLabel');
+  const coreService = useContext(CoreServicesContext);
   const { dataStream, onCancel, onSubmitSuccess } = props;
   const isEdit = !!dataStream;
   const services = useContext(ServicesContext) as BrowserServices;
@@ -60,7 +68,7 @@ const DataStreamDetail = (props: DataStreamDetailProps, ref: Ref<FieldInstance>)
       value: dataStream.name || "",
       commonService: services.commonService,
       isEdit,
-    });
+    }, dataSourceId);
     if (result && result.ok) {
       coreServices.notifications.toasts.addSuccess(`${dataStream.name} has been successfully ${isEdit ? "updated" : "created"}.`);
       onSubmitSuccess && onSubmitSuccess(dataStream.name || "");
@@ -79,7 +87,7 @@ const DataStreamDetail = (props: DataStreamDetailProps, ref: Ref<FieldInstance>)
         dataStream,
         coreService: coreServices,
         commonService: services.commonService,
-      })
+      }, dataSourceId)
         .then((dataStreamDetail) => {
           field.resetValues(dataStreamDetail);
         })
@@ -90,7 +98,7 @@ const DataStreamDetail = (props: DataStreamDetailProps, ref: Ref<FieldInstance>)
       setIsLoading(true);
       getAllDataStreamTemplate({
         commonService: services.commonService,
-      })
+      }, dataSourceId)
         .then((result) => setTemplates(result))
         .finally(() => {
           setIsLoading(false);
@@ -109,6 +117,23 @@ const DataStreamDetail = (props: DataStreamDetailProps, ref: Ref<FieldInstance>)
 
   return (
     <>
+      <DataSourceMenu
+        appName={"Index State Management"}
+        setMenuMountPoint={props.setActionMenu}
+        showDataSourceSelectable={true}
+        disableDataSourceSelectable={true}
+        notifications={coreService?.notifications}
+        savedObjects={coreService?.savedObjects.client}
+        selectedOption={(() => {
+          if (dataSourceId && dataSourceId !== '') {
+            return [{
+              id: dataSourceId,
+              label: dataSourceLabel,
+            }];
+          }
+          return undefined;
+        })()}
+      />
       <EuiFlexGroup alignItems="center">
         <EuiFlexItem>
           <EuiTitle size="l">{isEdit ? <h1 title={values.name}>{values.name}</h1> : <h1>Create data stream</h1>}</EuiTitle>

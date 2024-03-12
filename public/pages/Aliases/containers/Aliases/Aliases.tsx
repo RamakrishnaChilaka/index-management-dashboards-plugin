@@ -166,7 +166,8 @@ class Aliases extends Component<AliasesProps, AliasesState> {
   }
 
   componentDidMount() {
-    this.context.chrome.setBreadcrumbs([BREADCRUMBS.INDEX_MANAGEMENT, BREADCRUMBS.ALIASES]);
+    this.state.dataSourceId
+    this.context.chrome.setBreadcrumbs([BREADCRUMBS.INDEX_MANAGEMENT + "?dataSr", BREADCRUMBS.ALIASES]);
     this.getAliases();
   }
 

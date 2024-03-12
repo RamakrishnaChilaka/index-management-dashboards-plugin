@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { Component } from 'react';
+import React, { Component, useContext } from 'react';
 import _ from 'lodash';
 import { RouteComponentProps } from 'react-router-dom';
 import queryString from 'query-string';
@@ -36,13 +36,13 @@ import { SECURITY_EXCEPTION_PREFIX } from '../../../../../server/utils/constants
 import IndicesActions from '../IndicesActions';
 import { destroyListener, EVENT_MAP, listenEvent } from '../../../../JobHandler';
 import './index.scss';
-import { DataSourceMenu } from '../../../../../../../src/plugins/data_source_management/public';
+import { DataSourceMenuContext } from '../../../../services/DataSourceMenuContext';
 
 interface IndicesProps extends RouteComponentProps {
   indexService: IndexService;
   commonService: CommonService;
-  savedObjects: SavedObjectsClientContract;
-  setActionMenu: (menuMount: MountPoint | undefined) => void;
+  DataSourceMenu: string;
+  DataSourceLabel: string;
 }
 
 interface IndicesState {
@@ -62,7 +62,7 @@ interface IndicesState {
   dataSourceLabel: string;
 }
 
-export default class Indices extends Component<IndicesProps, IndicesState> {
+class IndicesInternal extends Component<IndicesProps, IndicesState> {
   static contextType = CoreServicesContext;
 
   constructor(props: IndicesProps) {
@@ -259,35 +259,12 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
     const { history } = this.props;
 
     return (
-      <>
-        <DataSourceMenu
-          appName={"Index State Management"}
-          setMenuMountPoint={this.props.setActionMenu}
-          showDataSourceSelectable={true}
-          dataSourceCallBackFunc={({id: dataSourceId, label: dataSourceLabel}) => {
-            this.setState({ dataSourceId, dataSourceLabel });
-          }}
-          disableDataSourceSelectable={false}
-          notifications={this.context.notifications}
-          savedObjects={this.props.savedObjects}
-          selectedOption={(() => {
-            if (this.state.dataSourceId && this.state.dataSourceId !== '') {
-              return [{
-                id: this.state.dataSourceId,
-                label: this.state.dataSourceLabel,
-              }];
-            }
-            return undefined;
-          })()}
-          fullWidth={false}
-          hideLocalCluster={false}
-        />
         <ContentPanel
           actions={
             <ContentPanelActions
               actions={[
                 {
-                  text: 'Refresh',
+                  text: `Refresh`,
                   buttonProps: {
                     iconType: 'refresh',
                     onClick: this.getIndices,
@@ -354,7 +331,13 @@ export default class Indices extends Component<IndicesProps, IndicesState> {
             sorting={sorting}
           />
         </ContentPanel>
-      </>
     );
   }
+}
+
+export default function Indices(props: IndicesProps) {
+  const dataSourceMenuProps = useContext(DataSourceMenuContext);
+  return (
+      <IndicesInternal {...props} dataSourceId={dataSourceMenuProps.dataSourceId} dataSourceLabel={dataSourceMenuProps.dataSourceLabel} />
+  );
 }

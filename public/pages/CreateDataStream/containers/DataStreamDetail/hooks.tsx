@@ -7,17 +7,18 @@ import { CommonService } from "../../../../services";
 import { TemplateItemRemote } from "../../../../../models/interfaces";
 import { DataStream } from "../../../../../server/models/interfaces";
 
-export const createDataStream = async (props: { value: string; isEdit: boolean; commonService: CommonService }) => {
+export const createDataStream = async (props: { value: string; isEdit: boolean; commonService: CommonService }, dataSourceId: string) => {
   return await props.commonService.apiCaller({
     endpoint: "transport.request",
     data: {
       method: "PUT",
       path: `_data_stream/${props.value}`,
+      dataSourceId: dataSourceId,
     },
   });
 };
 
-export const getDataStream = async (props: { dataStream: string; commonService: CommonService; coreService: CoreStart }) => {
+export const getDataStream = async (props: { dataStream: string; commonService: CommonService; coreService: CoreStart }, dataSourceId: string) => {
   const response = await props.commonService.apiCaller<{
     data_streams: DataStream[];
   }>({
@@ -25,6 +26,7 @@ export const getDataStream = async (props: { dataStream: string; commonService: 
     data: {
       method: "GET",
       path: `_data_stream/${props.dataStream}`,
+      dataSourceId: dataSourceId,
     },
   });
   let error: string = "";
@@ -46,7 +48,7 @@ export const getDataStream = async (props: { dataStream: string; commonService: 
 
 export const getAllDataStreamTemplate = (props: {
   commonService: CommonService;
-}): Promise<
+}, dataSourceId: string): Promise<
   {
     name: string;
     index_template: TemplateItemRemote;
@@ -62,6 +64,7 @@ export const getAllDataStreamTemplate = (props: {
       data: {
         method: "GET",
         path: "/_index_template/*",
+        dataSourceId: dataSourceId,
       },
       endpoint: "transport.request",
     })

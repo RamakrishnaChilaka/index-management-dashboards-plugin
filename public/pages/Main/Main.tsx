@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { Component } from 'react';
+import React, { Component, createContext } from 'react';
 import { Switch, Route, Redirect, RouteComponentProps } from 'react-router-dom';
 // @ts-ignore
-import { EuiSideNav, EuiPage, EuiPageBody, EuiPageSideBar } from '@elastic/eui';
+import { EuiSideNav, EuiPage, EuiPageBody, EuiPageSideBar, Query, Direction } from '@elastic/eui';
 import { CoreStart, MountPoint } from 'opensearch-dashboards/public';
 import queryString from 'query-string';
 import Policies from '../Policies';
@@ -48,6 +48,8 @@ import ForceMerge from '../ForceMerge';
 import Notifications from '../Notifications';
 import ComposableTemplates from '../ComposableTemplates';
 import CreateComposableTemplate from '../CreateComposableTemplate';
+import { DataSourceMenu } from '../../../../../src/plugins/data_source_management/public';
+import { DataSourceMenuContext } from '../../services/DataSourceMenuContext';
 
 enum Navigation {
   IndexManagement = 'Index Management',
@@ -116,7 +118,23 @@ interface MainProps extends RouteComponentProps {
   setActionMenu: (menuMount: MountPoint | undefined) => void;
 }
 
-export default class Main extends Component<MainProps, object> {
+interface MainState {
+  dataSourceId: string;
+  dataSourceLabel: string;
+  disableDataSourceSelectable: boolean;
+}
+
+
+export default class Main extends Component<MainProps, MainState> {
+  constructor(props: MainProps) {
+    super(props);
+    this.state = {
+      dataSourceId: '',
+      dataSourceLabel: '',
+      disableDataSourceSelectable: false,
+    };
+  }
+
   render() {
     const {
       location: { pathname },
@@ -230,443 +248,480 @@ export default class Main extends Component<MainProps, object> {
               {(services: BrowserServices | null) =>
                 services && (
                   <ModalProvider>
-                    <ModalRoot services={services} />
-                    <EuiPage restrictWidth="100%">
-                      {/* Hide side navigation bar when creating or editing rollup job*/}
-                      {!HIDDEN_NAV_ROUTES.includes(pathname) && !HIDDEN_NAV_STARTS_WITH_ROUTE.some((item) => pathname.startsWith(item)) ? (
-                        <EuiPageSideBar style={{ minWidth: 200 }}>
-                          <EuiSideNav style={{ width: 200 }} items={sideNav} />
-                        </EuiPageSideBar>
-                      ) : null}
-                      <EuiPageBody>
-                        <Switch>
-                          <Route
-                            path={ROUTES.SNAPSHOTS}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <Snapshots
+                    <DataSourceMenuContext.Provider value={{
+                      dataSourceId: this.state.dataSourceId,
+                      dataSourceLabel: this.state.dataSourceLabel,
+                    }}>
+                      <DataSourceMenu
+                        appName={'Index State Management'}
+                        setMenuMountPoint={this.props.setActionMenu}
+                        showDataSourceSelectable={true}
+                        dataSourceCallBackFunc={({ id: dataSourceId, label: dataSourceLabel }) => {
+                          this.setState({ dataSourceId, dataSourceLabel });
+                        }}
+                        disableDataSourceSelectable={false}
+                        notifications={services.notificationService}
+                        savedObjects={core.savedObjects.client}
+                        selectedOption={(() => {
+                          if (this.state.dataSourceId && this.state.dataSourceId !== '') {
+                            return [{
+                              id: this.state.dataSourceId,
+                              label: this.state.dataSourceLabel,
+                            }];
+                          }
+                          return undefined;
+                        })()}
+                        fullWidth={false}
+                        hideLocalCluster={false}
+                      />
+                      <ModalRoot services={services} />
+                      <EuiPage restrictWidth="100%">
+                        {/* Hide side navigation bar when creating or editing rollup job*/}
+                        {!HIDDEN_NAV_ROUTES.includes(pathname) && !HIDDEN_NAV_STARTS_WITH_ROUTE.some((item) => pathname.startsWith(item)) ? (
+                          <EuiPageSideBar style={{ minWidth: 200 }}>
+                            <EuiSideNav style={{ width: 200 }} items={sideNav} />
+                          </EuiPageSideBar>
+                        ) : null}
+                        <EuiPageBody>
+                          <Switch>
+                            <Route
+                              path={ROUTES.SNAPSHOTS}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <Snapshots
+                                    {...props}
+                                    snapshotManagementService={services.snapshotManagementService}
+                                    indexService={services.indexService}
+                                  />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.REPOSITORIES}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <Repositories {...props} snapshotManagementService={services.snapshotManagementService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.SNAPSHOT_POLICIES}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <SnapshotPolicies {...props}
+                                                    snapshotManagementService={services.snapshotManagementService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.SNAPSHOT_POLICY_DETAILS}
+                              render={(props: RouteComponentProps) => (
+                                <SnapshotPolicyDetails
                                   {...props}
                                   snapshotManagementService={services.snapshotManagementService}
-                                  indexService={services.indexService}
+                                  notificationService={services.notificationService}
                                 />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.REPOSITORIES}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <Repositories {...props} snapshotManagementService={services.snapshotManagementService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.SNAPSHOT_POLICIES}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <SnapshotPolicies {...props}
-                                                  snapshotManagementService={services.snapshotManagementService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.SNAPSHOT_POLICY_DETAILS}
-                            render={(props: RouteComponentProps) => (
-                              <SnapshotPolicyDetails
-                                {...props}
-                                snapshotManagementService={services.snapshotManagementService}
-                                notificationService={services.notificationService}
-                              />
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.CREATE_SNAPSHOT_POLICY}
-                            render={(props: RouteComponentProps) => (
-                              <CreateSnapshotPolicy
-                                {...props}
-                                snapshotManagementService={services.snapshotManagementService}
-                                notificationService={services.notificationService}
-                                indexService={services.indexService}
-                                isEdit={false}
-                              />
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.EDIT_SNAPSHOT_POLICY}
-                            render={(props: RouteComponentProps) => (
-                              <CreateSnapshotPolicy
-                                {...props}
-                                snapshotManagementService={services.snapshotManagementService}
-                                notificationService={services.notificationService}
-                                indexService={services.indexService}
-                                isEdit={true}
-                              />
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.CHANGE_POLICY}
-                            render={(props: RouteComponentProps) => (
-                              <ChangePolicy
-                                {...props}
-                                managedIndexService={services.managedIndexService}
-                                indexService={services.indexService}
-                              />
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.CREATE_POLICY}
-                            render={(props: RouteComponentProps) =>
-                              queryString.parse(this.props.location.search).type == 'visual' ? (
-                                <VisualCreatePolicy
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.CREATE_SNAPSHOT_POLICY}
+                              render={(props: RouteComponentProps) => (
+                                <CreateSnapshotPolicy
                                   {...props}
+                                  snapshotManagementService={services.snapshotManagementService}
+                                  notificationService={services.notificationService}
+                                  indexService={services.indexService}
                                   isEdit={false}
-                                  policyService={services.policyService}
-                                  notificationService={services.notificationService}
                                 />
-                              ) : (
-                                <CreatePolicy {...props} isEdit={false} policyService={services.policyService} />
-                              )
-                            }
-                          />
-                          <Route
-                            path={ROUTES.EDIT_POLICY}
-                            render={(props: RouteComponentProps) =>
-                              queryString.parse(this.props.location.search).type == 'visual' ? (
-                                <VisualCreatePolicy
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.EDIT_SNAPSHOT_POLICY}
+                              render={(props: RouteComponentProps) => (
+                                <CreateSnapshotPolicy
                                   {...props}
+                                  snapshotManagementService={services.snapshotManagementService}
+                                  notificationService={services.notificationService}
+                                  indexService={services.indexService}
                                   isEdit={true}
-                                  policyService={services.policyService}
-                                  notificationService={services.notificationService}
                                 />
-                              ) : (
-                                <CreatePolicy {...props} isEdit={true} policyService={services.policyService} />
-                              )
-                            }
-                          />
-                          <Route
-                            path={ROUTES.INDEX_POLICIES}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <Policies {...props} policyService={services.policyService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.POLICY_DETAILS}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <PolicyDetails {...props} policyService={services.policyService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.MANAGED_INDICES}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <ManagedIndices {...props} managedIndexService={services.managedIndexService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.INDICES}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <Indices
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.CHANGE_POLICY}
+                              render={(props: RouteComponentProps) => (
+                                <ChangePolicy
                                   {...props}
-                                  indexService={services.indexService}
-                                  commonService={services.commonService}
-                                  savedObjects={core.savedObjects.client}
-                                  setActionMenu={this.props.setActionMenu}
-                                />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.ROLLUPS}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <Rollups {...props} rollupService={services.rollupService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.CREATE_ROLLUP}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <CreateRollupForm {...props} rollupService={services.rollupService}
-                                                  indexService={services.indexService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.EDIT_ROLLUP}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <EditRollup {...props} rollupService={services.rollupService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.ROLLUP_DETAILS}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <RollupDetails {...props} rollupService={services.rollupService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.TRANSFORMS}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <Transforms {...props} transformService={services.transformService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.CREATE_TRANSFORM}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <CreateTransformForm
-                                  {...props}
-                                  rollupService={services.rollupService}
-                                  transformService={services.transformService}
+                                  managedIndexService={services.managedIndexService}
                                   indexService={services.indexService}
                                 />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.EDIT_TRANSFORM}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <EditTransform {...props} transformService={services.transformService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.TRANSFORM_DETAILS}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <TransformDetails {...props} transformService={services.transformService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={`${ROUTES.CREATE_INDEX}/:index/:mode`}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <CreateIndex {...props}
-                                             commonService={services.commonService}
-                                             setActionMenu={this.props.setActionMenu}
-                                />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={`${ROUTES.CREATE_INDEX}/:index`}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <CreateIndex {...props}
-                                             commonService={services.commonService}
-                                             setActionMenu={this.props.setActionMenu}
-                                />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.CREATE_INDEX}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <CreateIndex {...props}
-                                             commonService={services.commonService}
-                                             setActionMenu={this.props.setActionMenu} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.REINDEX}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <Reindex {...props} commonService={services.commonService}
-                                         indexService={services.indexService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.SPLIT_INDEX}
-                            render={(props: RouteComponentProps) => (
-                              <div style={ROUTE_STYLE}>
-                                <SplitIndex {...props} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.ALIASES}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <Aliases
-                                  {...props}
-                                  savedObjects={core.savedObjects.client}
-                                  setActionMenu={this.props.setActionMenu}
-                                />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.TEMPLATES}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <Templates
-                                  {...props}
-                                  savedObjects={core.savedObjects.client}
-                                  setActionMenu={this.props.setActionMenu}
-                                />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.COMPOSABLE_TEMPLATES}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <ComposableTemplates {...props} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={`${ROUTES.CREATE_COMPOSABLE_TEMPLATE}/:template/:mode`}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <CreateComposableTemplate {...props} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={`${ROUTES.CREATE_COMPOSABLE_TEMPLATE}/:template`}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <CreateComposableTemplate {...props} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.CREATE_COMPOSABLE_TEMPLATE}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <CreateComposableTemplate {...props} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={`${ROUTES.CREATE_TEMPLATE}/:template/:mode`}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <CreateIndexTemplate {...props} setActionMenu={this.props.setActionMenu}/>
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={`${ROUTES.CREATE_TEMPLATE}/:template`}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <CreateIndexTemplate {...props} setActionMenu={this.props.setActionMenu} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.CREATE_TEMPLATE}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <CreateIndexTemplate {...props} setActionMenu={this.props.setActionMenu}/>
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={`${ROUTES.INDEX_DETAIL}/:index`}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <IndexDetail
-                                  {...props}
-                                  setActionMenu={this.props.setActionMenu}
-                                />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.SHRINK_INDEX}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <ShrinkIndex {...props} commonService={services.commonService} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={`${ROUTES.ROLLOVER}/:source`}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <Rollover {...props} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.ROLLOVER}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <Rollover {...props} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.DATA_STREAMS}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <DataStreams {...props} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={`${ROUTES.CREATE_DATA_STREAM}/:dataStream`}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <CreateDataStream {...props} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.CREATE_DATA_STREAM}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <CreateDataStream {...props} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={`${ROUTES.FORCE_MERGE}/:indexes`}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <ForceMerge {...props} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.FORCE_MERGE}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <ForceMerge {...props} />
-                              </div>
-                            )}
-                          />
-                          <Route
-                            path={ROUTES.NOTIFICATIONS}
-                            render={(props) => (
-                              <div style={ROUTE_STYLE}>
-                                <Notifications {...props} />
-                              </div>
-                            )}
-                          />
-                          <Redirect from="/" to={landingPage} />
-                        </Switch>
-                      </EuiPageBody>
-                    </EuiPage>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.CREATE_POLICY}
+                              render={(props: RouteComponentProps) =>
+                                queryString.parse(this.props.location.search).type == 'visual' ? (
+                                  <VisualCreatePolicy
+                                    {...props}
+                                    isEdit={false}
+                                    policyService={services.policyService}
+                                    notificationService={services.notificationService}
+                                  />
+                                ) : (
+                                  <CreatePolicy {...props} isEdit={false} policyService={services.policyService} />
+                                )
+                              }
+                            />
+                            <Route
+                              path={ROUTES.EDIT_POLICY}
+                              render={(props: RouteComponentProps) =>
+                                queryString.parse(this.props.location.search).type == 'visual' ? (
+                                  <VisualCreatePolicy
+                                    {...props}
+                                    isEdit={true}
+                                    policyService={services.policyService}
+                                    notificationService={services.notificationService}
+                                  />
+                                ) : (
+                                  <CreatePolicy {...props} isEdit={true} policyService={services.policyService} />
+                                )
+                              }
+                            />
+                            <Route
+                              path={ROUTES.INDEX_POLICIES}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <Policies {...props} policyService={services.policyService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.POLICY_DETAILS}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <PolicyDetails {...props} policyService={services.policyService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.MANAGED_INDICES}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <ManagedIndices {...props} managedIndexService={services.managedIndexService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.INDICES}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <Indices
+                                    {...props}
+                                    indexService={services.indexService}
+                                    commonService={services.commonService}
+                                    savedObjects={core.savedObjects.client}
+                                    setActionMenu={this.props.setActionMenu}
+                                  />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.ROLLUPS}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <Rollups {...props} rollupService={services.rollupService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.CREATE_ROLLUP}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <CreateRollupForm {...props} rollupService={services.rollupService}
+                                                    indexService={services.indexService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.EDIT_ROLLUP}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <EditRollup {...props} rollupService={services.rollupService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.ROLLUP_DETAILS}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <RollupDetails {...props} rollupService={services.rollupService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.TRANSFORMS}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <Transforms {...props} transformService={services.transformService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.CREATE_TRANSFORM}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <CreateTransformForm
+                                    {...props}
+                                    rollupService={services.rollupService}
+                                    transformService={services.transformService}
+                                    indexService={services.indexService}
+                                  />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.EDIT_TRANSFORM}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <EditTransform {...props} transformService={services.transformService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.TRANSFORM_DETAILS}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <TransformDetails {...props} transformService={services.transformService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={`${ROUTES.CREATE_INDEX}/:index/:mode`}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <CreateIndex {...props}
+                                               commonService={services.commonService}
+                                               setActionMenu={this.props.setActionMenu}
+                                  />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={`${ROUTES.CREATE_INDEX}/:index`}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <CreateIndex {...props}
+                                               commonService={services.commonService}
+                                               setActionMenu={this.props.setActionMenu}
+                                  />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.CREATE_INDEX}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <CreateIndex {...props}
+                                               commonService={services.commonService}
+                                               setActionMenu={this.props.setActionMenu} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.REINDEX}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <Reindex {...props} commonService={services.commonService}
+                                           indexService={services.indexService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.SPLIT_INDEX}
+                              render={(props: RouteComponentProps) => (
+                                <div style={ROUTE_STYLE}>
+                                  <SplitIndex {...props} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.ALIASES}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <Aliases
+                                    {...props}
+                                    savedObjects={core.savedObjects.client}
+                                    setActionMenu={this.props.setActionMenu}
+                                  />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.TEMPLATES}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <Templates
+                                    {...props}
+                                    savedObjects={core.savedObjects.client}
+                                    setActionMenu={this.props.setActionMenu}
+                                  />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.COMPOSABLE_TEMPLATES}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <ComposableTemplates {...props} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={`${ROUTES.CREATE_COMPOSABLE_TEMPLATE}/:template/:mode`}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <CreateComposableTemplate {...props} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={`${ROUTES.CREATE_COMPOSABLE_TEMPLATE}/:template`}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <CreateComposableTemplate {...props} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.CREATE_COMPOSABLE_TEMPLATE}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <CreateComposableTemplate {...props} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={`${ROUTES.CREATE_TEMPLATE}/:template/:mode`}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <CreateIndexTemplate {...props} setActionMenu={this.props.setActionMenu} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={`${ROUTES.CREATE_TEMPLATE}/:template`}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <CreateIndexTemplate {...props} setActionMenu={this.props.setActionMenu} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.CREATE_TEMPLATE}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <CreateIndexTemplate {...props} setActionMenu={this.props.setActionMenu} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={`${ROUTES.INDEX_DETAIL}/:index`}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <IndexDetail
+                                    {...props}
+                                    setActionMenu={this.props.setActionMenu}
+                                  />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.SHRINK_INDEX}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <ShrinkIndex {...props} commonService={services.commonService} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={`${ROUTES.ROLLOVER}/:source`}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <Rollover {...props} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.ROLLOVER}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <Rollover {...props} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.DATA_STREAMS}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <DataStreams
+                                    {...props}
+                                    savedObjects={core.savedObjects.client}
+                                    setActionMenu={this.props.setActionMenu}
+                                  />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={`${ROUTES.CREATE_DATA_STREAM}/:dataStream`}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <CreateDataStream
+                                    {...props}
+                                    setActionMenu={this.props.setActionMenu}
+                                  />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.CREATE_DATA_STREAM}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <CreateDataStream
+                                    {...props}
+                                    setActionMenu={this.props.setActionMenu}
+                                  />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={`${ROUTES.FORCE_MERGE}/:indexes`}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <ForceMerge {...props} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.FORCE_MERGE}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <ForceMerge {...props} />
+                                </div>
+                              )}
+                            />
+                            <Route
+                              path={ROUTES.NOTIFICATIONS}
+                              render={(props) => (
+                                <div style={ROUTE_STYLE}>
+                                  <Notifications {...props} />
+                                </div>
+                              )}
+                            />
+                            <Redirect from="/" to={landingPage} />
+                          </Switch>
+                        </EuiPageBody>
+                      </EuiPage>
+                    </DataSourceMenuContext.Provider>
                   </ModalProvider>
                 )
               }

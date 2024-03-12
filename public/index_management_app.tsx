@@ -22,8 +22,9 @@ import { DarkModeContext } from './components/DarkMode';
 import Main from './pages/Main';
 import { CoreServicesContext } from './components/core_services';
 import './app.scss';
+import { AppPluginStartDependencies } from '../../../examples/search_examples/public/types';
 
-export function renderApp(coreStart: CoreStart, params: AppMountParameters, landingPage: string) {
+export function renderApp(coreStart: CoreStart, pluginStartDependencies: AppPluginStartDependencies, params: AppMountParameters, landingPage: string) {
   const http = coreStart.http;
 
   const indexService = new IndexService(http);
