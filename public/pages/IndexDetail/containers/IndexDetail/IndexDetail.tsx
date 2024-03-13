@@ -84,7 +84,6 @@ export default function IndexDetail(props: IndexDetailModalProps) {
         };
       })
       .then((res) => {
-        console.log("res1 is ", res);
         if (res && res.ok) {
           setDetail(res.response);
         } else {

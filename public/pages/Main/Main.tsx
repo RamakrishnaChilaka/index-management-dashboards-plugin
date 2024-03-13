@@ -270,7 +270,49 @@ export default class Main extends Component<MainProps, MainState> {
                       >
                         <Switch>
                           <Route
-                            path={[ROUTES.INDICES, ROUTES.CREATE_INDEX, ROUTES.ALIASES, ROUTES.DATA_STREAMS]}
+                            path={[`${ROUTES.CREATE_DATA_STREAM}/:dataStream`, `${ROUTES.CREATE_TEMPLATE}/:template`]}
+                            render={(props) => (
+                              <DataSourceMenu
+                                appName={"Index State Management"}
+                                setMenuMountPoint={this.props.setActionMenu}
+                                showDataSourceSelectable={true}
+                                dataSourceCallBackFunc={({ id: dataSourceId, label: dataSourceLabel }) => {
+                                  this.setState({ dataSourceId, dataSourceLabel });
+                                }}
+                                disableDataSourceSelectable={(() => {
+                                  console.log("disable ", props.match.params);
+                                  return props.match.params.dataStream || props.match.params.template;
+                                })()}
+                                notifications={services.notificationService}
+                                savedObjects={core.savedObjects.client}
+                                selectedOption={(() => {
+                                  if (this.state.dataSourceId && this.state.dataSourceId !== "") {
+                                    return [
+                                      {
+                                        id: this.state.dataSourceId,
+                                        label: this.state.dataSourceLabel,
+                                      },
+                                    ];
+                                  }
+                                  return undefined;
+                                })()}
+                                fullWidth={false}
+                                hideLocalCluster={false}
+                              />
+                            )}
+                          />
+                          <Route
+                            path={[
+                              ROUTES.INDICES,
+                              ROUTES.CREATE_INDEX,
+                              ROUTES.ALIASES,
+                              ROUTES.DATA_STREAMS,
+                              ROUTES.TEMPLATES,
+                              ROUTES.CREATE_DATA_STREAM,
+                              ROUTES.CREATE_TEMPLATE,
+                              ROUTES.COMPOSABLE_TEMPLATES,
+                              ROUTES.CREATE_COMPOSABLE_TEMPLATE,
+                            ]}
                             render={() => (
                               <DataSourceMenu
                                 appName={"Index State Management"}
@@ -299,38 +341,7 @@ export default class Main extends Component<MainProps, MainState> {
                             )}
                           />
                           <Route
-                            path={[`${ROUTES.CREATE_DATA_STREAM}/:dataStream`, `${ROUTES.INDEX_DETAIL}/:index`]}
-                            render={(props) => (
-                              <DataSourceMenu
-                                appName={"Index State Management"}
-                                setMenuMountPoint={this.props.setActionMenu}
-                                showDataSourceSelectable={true}
-                                dataSourceCallBackFunc={({ id: dataSourceId, label: dataSourceLabel }) => {
-                                  this.setState({ dataSourceId, dataSourceLabel });
-                                }}
-                                disableDataSourceSelectable={(() => {
-                                  return props.match.params.dataStream || props.match.params.index;
-                                })()}
-                                notifications={services.notificationService}
-                                savedObjects={core.savedObjects.client}
-                                selectedOption={(() => {
-                                  if (this.state.dataSourceId && this.state.dataSourceId !== "") {
-                                    return [
-                                      {
-                                        id: this.state.dataSourceId,
-                                        label: this.state.dataSourceLabel,
-                                      },
-                                    ];
-                                  }
-                                  return undefined;
-                                })()}
-                                fullWidth={false}
-                                hideLocalCluster={false}
-                              />
-                            )}
-                          />
-                          <Route
-                            path={[`${ROUTES.FORCE_MERGE}`, `${ROUTES.SPLIT_INDEX}`, `${ROUTES.ROLLOVER}`]}
+                            path={[ROUTES.FORCE_MERGE, ROUTES.SPLIT_INDEX, ROUTES.ROLLOVER, ROUTES.INDEX_DETAIL]}
                             render={(props) => (
                               <DataSourceMenu
                                 appName={"Index State Management"}
