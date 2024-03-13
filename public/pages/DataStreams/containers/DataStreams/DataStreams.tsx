@@ -333,21 +333,11 @@ class DataStreams extends Component<DataStreamsProps, DataStreamsState> {
               name: "Data stream name",
               sortable: true,
               render: (value: unknown) => {
-                if (this.props.multiDataSourceEnabled) {
-                  return (
-                    <Link
-                      to={`${ROUTES.CREATE_DATA_STREAM}/${value}/readonly?dataSourceId=${this.state.dataSourceId}&dataSourceLabel=${this.state.dataSourceLabel}`}
-                    >
-                      <EuiLink>{value}</EuiLink>
-                    </Link>
-                  );
-                } else {
-                  return (
-                    <Link to={`${ROUTES.CREATE_DATA_STREAM}/${value}/readonly`}>
-                      <EuiLink>{value}</EuiLink>
-                    </Link>
-                  );
-                }
+                return (
+                  <Link to={`${ROUTES.CREATE_DATA_STREAM}/${value}/readonly`}>
+                    <EuiLink>{value}</EuiLink>
+                  </Link>
+                );
               },
             },
             {

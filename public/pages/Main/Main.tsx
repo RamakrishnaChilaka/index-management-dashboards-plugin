@@ -128,14 +128,21 @@ interface MainState {
 export default class Main extends Component<MainProps, MainState> {
   constructor(props: MainProps) {
     super(props);
-    const { dataSourceId = "", dataSourceLabel = "" } = queryString.parse(this.props.location.search) as {
-      dataSourceId: string;
-      dataSourceLabel: string;
-    };
-    this.state = {
-      dataSourceId: dataSourceId,
-      dataSourceLabel: dataSourceLabel,
-    };
+    if (props.multiDataSourceEnabled) {
+      const { dataSourceId = "", dataSourceLabel = "" } = queryString.parse(this.props.location.search) as {
+        dataSourceId: string;
+        dataSourceLabel: string;
+      };
+      this.state = {
+        dataSourceId: dataSourceId,
+        dataSourceLabel: dataSourceLabel,
+      };
+    } else {
+      this.state = {
+        dataSourceId: "",
+        dataSourceLabel: "",
+      };
+    }
   }
 
   render() {
@@ -268,108 +275,110 @@ export default class Main extends Component<MainProps, MainState> {
                           multiDataSourceEnabled: this.props.multiDataSourceEnabled,
                         }}
                       >
-                        <Switch>
-                          <Route
-                            path={[`${ROUTES.CREATE_DATA_STREAM}/:dataStream`, `${ROUTES.CREATE_TEMPLATE}/:template`]}
-                            render={(props) => (
-                              <DataSourceMenu
-                                appName={"Index State Management"}
-                                setMenuMountPoint={this.props.setActionMenu}
-                                showDataSourceSelectable={true}
-                                dataSourceCallBackFunc={({ id: dataSourceId, label: dataSourceLabel }) => {
-                                  this.setState({ dataSourceId, dataSourceLabel });
-                                }}
-                                disableDataSourceSelectable={(() => {
-                                  console.log("disable ", props.match.params);
-                                  return props.match.params.dataStream || props.match.params.template;
-                                })()}
-                                notifications={services.notificationService}
-                                savedObjects={core.savedObjects.client}
-                                selectedOption={(() => {
-                                  if (this.state.dataSourceId && this.state.dataSourceId !== "") {
-                                    return [
-                                      {
-                                        id: this.state.dataSourceId,
-                                        label: this.state.dataSourceLabel,
-                                      },
-                                    ];
-                                  }
-                                  return undefined;
-                                })()}
-                                fullWidth={false}
-                                hideLocalCluster={false}
-                              />
-                            )}
-                          />
-                          <Route
-                            path={[
-                              ROUTES.INDICES,
-                              ROUTES.CREATE_INDEX,
-                              ROUTES.ALIASES,
-                              ROUTES.DATA_STREAMS,
-                              ROUTES.TEMPLATES,
-                              ROUTES.CREATE_DATA_STREAM,
-                              ROUTES.CREATE_TEMPLATE,
-                              ROUTES.COMPOSABLE_TEMPLATES,
-                              ROUTES.CREATE_COMPOSABLE_TEMPLATE,
-                            ]}
-                            render={() => (
-                              <DataSourceMenu
-                                appName={"Index State Management"}
-                                setMenuMountPoint={this.props.setActionMenu}
-                                showDataSourceSelectable={true}
-                                dataSourceCallBackFunc={({ id: dataSourceId, label: dataSourceLabel }) => {
-                                  this.setState({ dataSourceId, dataSourceLabel });
-                                }}
-                                disableDataSourceSelectable={false}
-                                notifications={services.notificationService}
-                                savedObjects={core.savedObjects.client}
-                                selectedOption={(() => {
-                                  if (this.state.dataSourceId && this.state.dataSourceId !== "") {
-                                    return [
-                                      {
-                                        id: this.state.dataSourceId,
-                                        label: this.state.dataSourceLabel,
-                                      },
-                                    ];
-                                  }
-                                  return undefined;
-                                })()}
-                                fullWidth={false}
-                                hideLocalCluster={false}
-                              />
-                            )}
-                          />
-                          <Route
-                            path={[ROUTES.FORCE_MERGE, ROUTES.SPLIT_INDEX, ROUTES.ROLLOVER, ROUTES.INDEX_DETAIL]}
-                            render={(props) => (
-                              <DataSourceMenu
-                                appName={"Index State Management"}
-                                setMenuMountPoint={this.props.setActionMenu}
-                                showDataSourceSelectable={true}
-                                dataSourceCallBackFunc={({ id: dataSourceId, label: dataSourceLabel }) => {
-                                  this.setState({ dataSourceId, dataSourceLabel });
-                                }}
-                                disableDataSourceSelectable={true}
-                                notifications={services.notificationService}
-                                savedObjects={core.savedObjects.client}
-                                selectedOption={(() => {
-                                  if (this.state.dataSourceId && this.state.dataSourceId !== "") {
-                                    return [
-                                      {
-                                        id: this.state.dataSourceId,
-                                        label: this.state.dataSourceLabel,
-                                      },
-                                    ];
-                                  }
-                                  return undefined;
-                                })()}
-                                fullWidth={false}
-                                hideLocalCluster={false}
-                              />
-                            )}
-                          />
-                        </Switch>
+                        {this.props.multiDataSourceEnabled && (
+                          <Switch>
+                            <Route
+                              path={[`${ROUTES.CREATE_DATA_STREAM}/:dataStream`, `${ROUTES.CREATE_TEMPLATE}/:template`]}
+                              render={(props) => (
+                                <DataSourceMenu
+                                  appName={"Index State Management"}
+                                  setMenuMountPoint={this.props.setActionMenu}
+                                  showDataSourceSelectable={true}
+                                  dataSourceCallBackFunc={({ id: dataSourceId, label: dataSourceLabel }) => {
+                                    this.setState({ dataSourceId, dataSourceLabel });
+                                  }}
+                                  disableDataSourceSelectable={(() => {
+                                    console.log("disable ", props.match.params);
+                                    return props.match.params.dataStream || props.match.params.template;
+                                  })()}
+                                  notifications={services.notificationService}
+                                  savedObjects={core.savedObjects.client}
+                                  selectedOption={(() => {
+                                    if (this.state.dataSourceId && this.state.dataSourceId !== "") {
+                                      return [
+                                        {
+                                          id: this.state.dataSourceId,
+                                          label: this.state.dataSourceLabel,
+                                        },
+                                      ];
+                                    }
+                                    return undefined;
+                                  })()}
+                                  fullWidth={false}
+                                  hideLocalCluster={false}
+                                />
+                              )}
+                            />
+                            <Route
+                              path={[
+                                ROUTES.INDICES,
+                                ROUTES.CREATE_INDEX,
+                                ROUTES.ALIASES,
+                                ROUTES.DATA_STREAMS,
+                                ROUTES.TEMPLATES,
+                                ROUTES.CREATE_DATA_STREAM,
+                                ROUTES.CREATE_TEMPLATE,
+                                ROUTES.COMPOSABLE_TEMPLATES,
+                                ROUTES.CREATE_COMPOSABLE_TEMPLATE,
+                              ]}
+                              render={() => (
+                                <DataSourceMenu
+                                  appName={"Index State Management"}
+                                  setMenuMountPoint={this.props.setActionMenu}
+                                  showDataSourceSelectable={true}
+                                  dataSourceCallBackFunc={({ id: dataSourceId, label: dataSourceLabel }) => {
+                                    this.setState({ dataSourceId, dataSourceLabel });
+                                  }}
+                                  disableDataSourceSelectable={false}
+                                  notifications={services.notificationService}
+                                  savedObjects={core.savedObjects.client}
+                                  selectedOption={(() => {
+                                    if (this.state.dataSourceId && this.state.dataSourceId !== "") {
+                                      return [
+                                        {
+                                          id: this.state.dataSourceId,
+                                          label: this.state.dataSourceLabel,
+                                        },
+                                      ];
+                                    }
+                                    return undefined;
+                                  })()}
+                                  fullWidth={false}
+                                  hideLocalCluster={false}
+                                />
+                              )}
+                            />
+                            <Route
+                              path={[ROUTES.FORCE_MERGE, ROUTES.SPLIT_INDEX, ROUTES.ROLLOVER, ROUTES.INDEX_DETAIL]}
+                              render={(props) => (
+                                <DataSourceMenu
+                                  appName={"Index State Management"}
+                                  setMenuMountPoint={this.props.setActionMenu}
+                                  showDataSourceSelectable={true}
+                                  dataSourceCallBackFunc={({ id: dataSourceId, label: dataSourceLabel }) => {
+                                    this.setState({ dataSourceId, dataSourceLabel });
+                                  }}
+                                  disableDataSourceSelectable={true}
+                                  notifications={services.notificationService}
+                                  savedObjects={core.savedObjects.client}
+                                  selectedOption={(() => {
+                                    if (this.state.dataSourceId && this.state.dataSourceId !== "") {
+                                      return [
+                                        {
+                                          id: this.state.dataSourceId,
+                                          label: this.state.dataSourceLabel,
+                                        },
+                                      ];
+                                    }
+                                    return undefined;
+                                  })()}
+                                  fullWidth={false}
+                                  hideLocalCluster={false}
+                                />
+                              )}
+                            />
+                          </Switch>
+                        )}
                         <ModalRoot services={services} />
                         <EuiPage restrictWidth="100%">
                           {/* Hide side navigation bar when creating or editing rollup job*/}
