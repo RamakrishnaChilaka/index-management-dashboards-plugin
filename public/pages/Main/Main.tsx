@@ -330,7 +330,7 @@ export default class Main extends Component<MainProps, MainState> {
                             )}
                           />
                           <Route
-                            path={[`${ROUTES.FORCE_MERGE}`]}
+                            path={[`${ROUTES.FORCE_MERGE}`, `${ROUTES.SPLIT_INDEX}`, `${ROUTES.ROLLOVER}`]}
                             render={(props) => (
                               <DataSourceMenu
                                 appName={"Index State Management"}

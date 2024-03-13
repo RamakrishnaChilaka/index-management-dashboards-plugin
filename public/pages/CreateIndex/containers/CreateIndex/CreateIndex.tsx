@@ -42,19 +42,19 @@ export class CreateIndex extends Component<CreateIndexProps> {
   };
 
   onCancel = (): void => {
-    this.props.multiDataSourceEnabled
-      ? this.props.history.push(`${ROUTES.INDICES}?dataSourceId=${this.props.dataSourceId}&dataSourceLabel=${this.props.dataSourceLabel}`)
-      : this.props.history.push(ROUTES.INDICES);
+    this.props.history.push(ROUTES.INDICES);
   };
 
   componentWillReceiveProps(nextProps: Readonly<CreateIndexProps>) {
-    if (nextProps.dataSourceId !== this.props.dataSourceId || nextProps.dataSourceLabel !== this.props.dataSourceLabel) {
-      this.props.history.replace({
-        search: queryString.stringify({
-          dataSourceId: nextProps.dataSourceId,
-          dataSourceLabel: nextProps.dataSourceLabel,
-        }),
-      });
+    if (this.props.multiDataSourceEnabled) {
+      if (nextProps.dataSourceId !== this.props.dataSourceId || nextProps.dataSourceLabel !== this.props.dataSourceLabel) {
+        this.props.history.replace({
+          search: queryString.stringify({
+            dataSourceId: nextProps.dataSourceId,
+            dataSourceLabel: nextProps.dataSourceLabel,
+          }),
+        });
+      }
     }
   }
 
