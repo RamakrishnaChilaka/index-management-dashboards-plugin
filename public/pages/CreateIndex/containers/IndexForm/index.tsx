@@ -326,7 +326,6 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
       }
       result = await this.chainPromise(chainedPromises);
     } else {
-      console.log("this.props create index ", this.props);
       result = await this.commonService.apiCaller({
         endpoint: "indices.create",
         method: "PUT",

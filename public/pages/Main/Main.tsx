@@ -288,7 +288,6 @@ export default class Main extends Component<MainProps, MainState> {
                                     this.setState({ dataSourceId, dataSourceLabel });
                                   }}
                                   disableDataSourceSelectable={(() => {
-                                    console.log("disable ", props.match.params);
                                     return props.match.params.dataStream || props.match.params.template;
                                   })()}
                                   notifications={services.notificationService}

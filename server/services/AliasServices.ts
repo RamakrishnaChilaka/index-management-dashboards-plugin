@@ -14,12 +14,15 @@ import {
 import { ServerResponse } from "../models/types";
 import { Alias, GetAliasesResponse } from "../models/interfaces";
 import { SECURITY_EXCEPTION_PREFIX } from "../utils/constants";
+import { getClientBasedOnDataSource } from "../utils/helpers";
 
 export default class AliasServices {
   osDriver: ILegacyCustomClusterClient;
+  dataSourceEnabled: boolean;
 
-  constructor(osDriver: ILegacyCustomClusterClient) {
+  constructor(osDriver: ILegacyCustomClusterClient, dataSourceEnabled: boolean = false) {
     this.osDriver = osDriver;
+    this.dataSourceEnabled = dataSourceEnabled;
   }
 
   getAliases = async (
@@ -34,16 +37,8 @@ export default class AliasServices {
 
       const useQuery = !request.body;
       const usedParam = useQuery ? request.query : request.body;
-      console.log("request is ", usedParam);
       const { dataSourceId = "" } = usedParam || {};
-      let callWithRequest;
-      console.log("dataSourceId inside commonservice ", dataSourceId);
-      if (!dataSourceId || dataSourceId.trim().length == 0) {
-        // empty or null or undefined string
-        callWithRequest = this.osDriver.asScoped(request).callAsCurrentUser;
-      } else {
-        callWithRequest = context.dataSource.opensearch.legacy.getClient(dataSourceId).callAPI;
-      }
+      const callWithRequest = getClientBasedOnDataSource(context, this.dataSourceEnabled, request, dataSourceId, this.osDriver);
       const [aliases, apiAccessible, errMsg] = await getAliases(callWithRequest, search);
 
       if (!apiAccessible)

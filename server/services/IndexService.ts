@@ -21,16 +21,19 @@ import {
   ILegacyCustomClusterClient,
   IOpenSearchDashboardsResponse,
   RequestHandlerContext,
+  LegacyCallAPIOptions,
 } from "../../../../src/core/server";
-import { getSearchString } from "../utils/helpers";
+import { getClientBasedOnDataSource, getSearchString } from "../utils/helpers";
 import { getIndexToDataStreamMapping } from "./DataStreamService";
 import { IRecoveryItem, IReindexItem, ITaskItem } from "../../models/interfaces";
 
 export default class IndexService {
   osDriver: ILegacyCustomClusterClient;
+  dataSourceEnabled: boolean;
 
-  constructor(osDriver: ILegacyCustomClusterClient) {
+  constructor(osDriver: ILegacyCustomClusterClient, dataSourceEnabled: boolean = false) {
     this.osDriver = osDriver;
+    this.dataSourceEnabled = dataSourceEnabled;
   }
 
   getIndices = async (
@@ -51,7 +54,7 @@ export default class IndexService {
         showDataStreams,
         expandWildcards,
         exactSearch,
-        dataSourceId,
+        dataSourceId = "",
       } = request.query as {
         from: string;
         size: string;
@@ -66,7 +69,6 @@ export default class IndexService {
         exactSearch?: string;
         dataSourceId?: string;
       };
-      console.log("data sourceid inside indexservice ", dataSourceId);
       const params: {
         index: string;
         format: string;
@@ -89,15 +91,7 @@ export default class IndexService {
         params.index = exactSearch;
       }
 
-      // const { callAsCurrentUser: callWithRequest } = this.osDriver.asScoped(request);
-      // const dataSourceId = "e4669e80-dacf-11ee-8a5f-8f8578112d72";
-      let callWithRequest;
-      if (!dataSourceId || dataSourceId.trim().length == 0) {
-        // empty or null or undefined string
-        callWithRequest = this.osDriver.asScoped(request).callAsCurrentUser;
-      } else {
-        callWithRequest = context.dataSource.opensearch.legacy.getClient(dataSourceId).callAPI;
-      }
+      const callWithRequest = getClientBasedOnDataSource(context, this.dataSourceEnabled, request, dataSourceId, this.osDriver);
 
       const [recoverys, tasks, indicesResponse, indexToDataStreamMapping]: [
         IRecoveryItem[],
@@ -187,7 +181,7 @@ export default class IndexService {
       const paginatedIndices = filteredIndices.slice(fromNumber, fromNumber + sizeNumber);
       const indexNames = paginatedIndices.map((value: CatIndex) => value.index);
 
-      const managedStatus = await this._getManagedStatus(request, indexNames);
+      const managedStatus = await this._getManagedStatus(callWithRequest, indexNames);
 
       const allIndices = paginatedIndices.map((catIndex: CatIndex) => ({
         ...catIndex,
@@ -232,16 +226,12 @@ export default class IndexService {
   };
 
   _getManagedStatus = async (
-    request: OpenSearchDashboardsRequest,
+    callWithRequest: (endpoint: string, clientParams?: Record<string, any>, options?: LegacyCallAPIOptions) => any,
     indexNames: string[]
-  ): Promise<{
-    [indexName: string]: string;
-  }> => {
+  ): Promise<{ [p: string]: string }> => {
     try {
       const explainParamas = { index: indexNames.toString() };
-      const { callAsCurrentUser: callWithRequest } = this.osDriver.asScoped(request);
       const explainResponse: ExplainResponse = await callWithRequest("ism.explain", explainParamas);
-
       const managed: { [indexName: string]: string } = {};
       for (const indexName in explainResponse) {
         if (indexName === "total_managed_indices") continue;

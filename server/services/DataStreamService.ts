@@ -15,12 +15,15 @@ import { ServerResponse } from "../models/types";
 import { DataStream, GetDataStreamsResponse, IndexToDataStream } from "../models/interfaces";
 import { SECURITY_EXCEPTION_PREFIX } from "../utils/constants";
 import { IAPICaller } from "../../models/interfaces";
+import { getClientBasedOnDataSource } from "../utils/helpers";
 
 export default class DataStreamService {
   osDriver: ILegacyCustomClusterClient;
+  dataSourceEnabled: boolean;
 
-  constructor(osDriver: ILegacyCustomClusterClient) {
+  constructor(osDriver: ILegacyCustomClusterClient, dataSourceEnabled: boolean = false) {
     this.osDriver = osDriver;
+    this.dataSourceEnabled = dataSourceEnabled;
   }
 
   getDataStreams = async (
@@ -35,16 +38,8 @@ export default class DataStreamService {
 
       const useQuery = !request.body;
       const usedParam = useQuery ? request.query : request.body;
-      console.log("request is ", usedParam);
       const { dataSourceId = "" } = usedParam || {};
-      let callWithRequest;
-      console.log("dataSourceId inside commonservice ", dataSourceId);
-      if (!dataSourceId || dataSourceId.trim().length == 0) {
-        // empty or null or undefined string
-        callWithRequest = this.osDriver.asScoped(request).callAsCurrentUser;
-      } else {
-        callWithRequest = context.dataSource.opensearch.legacy.getClient(dataSourceId).callAPI;
-      }
+      const callWithRequest = getClientBasedOnDataSource(context, this.dataSourceEnabled, request, dataSourceId, this.osDriver);
       const [dataStreams, apiAccessible, errMsg] = await getDataStreams(callWithRequest, search);
 
       if (!apiAccessible)

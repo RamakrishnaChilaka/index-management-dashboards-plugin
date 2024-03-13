@@ -12,6 +12,7 @@ import {
   IOpenSearchDashboardsResponse,
 } from "../../../../src/core/server";
 import { IAPICaller } from "../../models/interfaces";
+import { getClientBasedOnDataSource } from "../utils/helpers";
 
 const VALID_METHODS = ["HEAD", "GET", "POST", "PUT", "DELETE"];
 
@@ -19,9 +20,11 @@ export type ICommonCaller = <T>(arg: any) => T;
 
 export default class CommonService {
   osDriver: ILegacyCustomClusterClient;
+  dataSourceEnabled: boolean;
 
-  constructor(osDriver: ILegacyCustomClusterClient) {
+  constructor(osDriver: ILegacyCustomClusterClient, dataSourceEnabled: boolean = false) {
     this.osDriver = osDriver;
+    this.dataSourceEnabled = dataSourceEnabled;
   }
 
   apiCaller = async (
@@ -33,22 +36,11 @@ export default class CommonService {
     const usedParam = (useQuery ? request.query : request.body) as IAPICaller;
     const { endpoint, data, hideLog } = usedParam || {};
 
-    console.log("request123 is ", request.body);
-
     try {
-      // const { callAsCurrentUser: callWithRequest } = this.osDriver.asScoped(request);
       const finalData = data;
-      const { dataSourceId = "" } = finalData;
-      console.log("dataSourceId inside commonservice ", dataSourceId);
-      let callWithRequest;
-      if (!dataSourceId || dataSourceId.trim().length == 0) {
-        // empty or null or undefined string
-        callWithRequest = this.osDriver.asScoped(request).callAsCurrentUser;
-      } else {
-        callWithRequest = context.dataSource.opensearch.legacy.getClient(dataSourceId).callAPI;
-      }
+      const { dataSourceId = "" } = data;
+      const callWithRequest = getClientBasedOnDataSource(context, this.dataSourceEnabled, request, dataSourceId, this.osDriver);
       delete finalData.dataSourceId;
-      console.log("finalData inside-commonservice ", finalData);
 
       /**
        * The endpoint must not be an empty string, reference from proxy caller
@@ -85,7 +77,6 @@ export default class CommonService {
         }
       }
 
-      console.log("data is ", data, endpoint);
       const payload = useQuery ? JSON.parse(finalData || "{}") : finalData;
       const commonCallerResponse = await callWithRequest(endpoint, payload || {});
       return response.custom({
