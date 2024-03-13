@@ -134,7 +134,6 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
       data: {
         index: indexName,
         flat_settings: true,
-        dataSourceId: this.props.dataSourceId,
       },
     });
     if (response.ok) {
@@ -202,7 +201,6 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
           body: {
             actions: aliasActions,
           },
-          dataSourceId: this.props.dataSourceId,
         },
       });
     }
@@ -245,7 +243,6 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
         flat_settings: true,
         // In edit mode, only dynamic settings can be modified
         body: finalSettings,
-        dataSourceId: this.props.dataSourceId,
       },
     });
   };
@@ -276,7 +273,6 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
             ...indexDetail.mappings,
             properties: newMappingSettings,
           },
-          dataSourceId: this.props.dataSourceId,
         },
       });
     }
@@ -343,7 +339,6 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
               properties: transformArrayToObject(mappings?.properties || []),
             },
           },
-          dataSourceId: this.props.dataSourceId,
         },
       });
     }
@@ -393,7 +388,6 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
         data: {
           path: `/_index_template/_simulate_index/${indexName}`,
           method: "POST",
-          dataSourceId: this.props.dataSourceId,
         },
       })
       .then((res) => {
@@ -446,7 +440,6 @@ export class IndexForm extends Component<IndexFormProps & { services: BrowserSer
                 format: "json",
                 name: `*${aliasName || ""}*`,
                 s: "alias:desc",
-                dataSourceId: this.props.dataSourceId,
               },
             })
           }

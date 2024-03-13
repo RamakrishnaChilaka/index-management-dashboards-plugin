@@ -97,7 +97,6 @@ export default function IndexDetail(props: IndexDetailModalProps) {
 
   const fetchCatIndexDetail = async (params: { showDataStreams: "true" | "false" }) => {
     const result = await services.indexService.getIndices({
-      dataSourceId: dataSourceId,
       terms: index,
       from: 0,
       size: 10,

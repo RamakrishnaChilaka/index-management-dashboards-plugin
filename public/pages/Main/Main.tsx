@@ -299,7 +299,7 @@ export default class Main extends Component<MainProps, MainState> {
                             )}
                           />
                           <Route
-                            path={[`${ROUTES.CREATE_DATA_STREAM}/:dataStream`]}
+                            path={[`${ROUTES.CREATE_DATA_STREAM}/:dataStream`, `${ROUTES.INDEX_DETAIL}/:index`]}
                             render={(props) => (
                               <DataSourceMenu
                                 appName={"Index State Management"}
@@ -309,7 +309,7 @@ export default class Main extends Component<MainProps, MainState> {
                                   this.setState({ dataSourceId, dataSourceLabel });
                                 }}
                                 disableDataSourceSelectable={(() => {
-                                  return props.match.params.dataStream;
+                                  return props.match.params.dataStream || props.match.params.index;
                                 })()}
                                 notifications={services.notificationService}
                                 savedObjects={core.savedObjects.client}
@@ -330,8 +330,8 @@ export default class Main extends Component<MainProps, MainState> {
                             )}
                           />
                           <Route
-                            path={`${ROUTES.INDEX_DETAIL}/:index`}
-                            render={() => (
+                            path={[`${ROUTES.FORCE_MERGE}`]}
+                            render={(props) => (
                               <DataSourceMenu
                                 appName={"Index State Management"}
                                 setMenuMountPoint={this.props.setActionMenu}

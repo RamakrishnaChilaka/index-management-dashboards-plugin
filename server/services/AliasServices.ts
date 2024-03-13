@@ -23,7 +23,7 @@ export default class AliasServices {
   }
 
   getAliases = async (
-    context: RequestHandlerContext,
+    context: any,
     request: OpenSearchDashboardsRequest,
     response: OpenSearchDashboardsResponseFactory
   ): Promise<IOpenSearchDashboardsResponse<ServerResponse<GetAliasesResponse>>> => {
@@ -32,8 +32,19 @@ export default class AliasServices {
         search?: string;
       };
 
-      const client = this.osDriver.asScoped(request);
-      const [aliases, apiAccessible, errMsg] = await getAliases(client, search);
+      const useQuery = !request.body;
+      const usedParam = useQuery ? request.query : request.body;
+      console.log("request is ", usedParam);
+      const { dataSourceId = "" } = usedParam || {};
+      let callWithRequest;
+      console.log("dataSourceId inside commonservice ", dataSourceId);
+      if (!dataSourceId || dataSourceId.trim().length == 0) {
+        // empty or null or undefined string
+        callWithRequest = this.osDriver.asScoped(request).callAsCurrentUser;
+      } else {
+        callWithRequest = context.dataSource.opensearch.legacy.getClient(dataSourceId).callAPI;
+      }
+      const [aliases, apiAccessible, errMsg] = await getAliases(callWithRequest, search);
 
       if (!apiAccessible)
         return response.custom({
@@ -67,10 +78,7 @@ export default class AliasServices {
   };
 }
 
-export async function getAliases(
-  { callAsCurrentUser: callWithRequest }: ILegacyScopedClusterClient,
-  search?: string
-): Promise<[Alias[], boolean, string]> {
+export async function getAliases(callWithRequest: any, search?: string): Promise<[Alias[], boolean, string]> {
   const searchPattern = search ? `*${search}*` : "*";
 
   let accessible = true;

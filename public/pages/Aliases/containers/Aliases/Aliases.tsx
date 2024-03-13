@@ -232,7 +232,6 @@ class Aliases extends Component<AliasesProps, AliasesState> {
       name: `*${queryObject.search}*`,
       s: `${queryObject.sortField}:${queryObject.sortDirection}`,
       expand_wildcards: status,
-      dataSourceId: this.state.dataSourceId,
     };
     if (!status) {
       delete payload.expand_wildcards;

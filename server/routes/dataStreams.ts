@@ -17,6 +17,7 @@ export default function (services: NodeServices, router: IRouter) {
       validate: {
         query: schema.object({
           search: schema.maybe(schema.string()),
+          dataSourceId: schema.maybe(schema.string()),
         }),
       },
     },

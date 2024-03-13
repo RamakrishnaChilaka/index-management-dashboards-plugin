@@ -291,7 +291,6 @@ export class Indices extends Component<IndicesProps, IndicesState> {
                     onShrink={this.getIndices}
                     selectedItems={this.state.selectedItems}
                     getIndices={this.getIndices}
-                    dataSourceId={this.state.dataSourceId}
                   />
                 ),
                 text: "",
