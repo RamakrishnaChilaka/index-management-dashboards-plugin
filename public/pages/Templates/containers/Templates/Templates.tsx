@@ -100,11 +100,14 @@ class Templates extends Component<TemplatesProps, TemplatesState> {
     this.getTemplates = debounce(this.getTemplates, 500, { leading: true });
   }
 
-  componentWillReceiveProps(nextProps: Readonly<TemplatesProps>) {
-    this.setState({
-      dataSourceId: nextProps.dataSourceId,
-      dataSourceLabel: nextProps.dataSourceLabel,
-    });
+  static getDerivedStateFromProps(nextProps: TemplatesProps, prevState: TemplatesState) {
+    if (nextProps.dataSourceId != prevState.dataSourceId || nextProps.dataSourceLabel != prevState.dataSourceLabel) {
+      return {
+        dataSourceId: nextProps.dataSourceId,
+        dataSourceLabel: nextProps.dataSourceLabel,
+      };
+    }
+    return null;
   }
 
   async componentDidUpdate(prevProps: TemplatesProps, prevState: TemplatesState) {

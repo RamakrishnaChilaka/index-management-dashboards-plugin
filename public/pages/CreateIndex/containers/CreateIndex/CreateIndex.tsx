@@ -45,13 +45,13 @@ export class CreateIndex extends Component<CreateIndexProps> {
     this.props.history.push(ROUTES.INDICES);
   };
 
-  componentWillReceiveProps(nextProps: Readonly<CreateIndexProps>) {
+  componentDidUpdate(prevProps: Readonly<CreateIndexProps>) {
     if (this.props.multiDataSourceEnabled) {
-      if (nextProps.dataSourceId !== this.props.dataSourceId || nextProps.dataSourceLabel !== this.props.dataSourceLabel) {
+      if (prevProps.dataSourceId !== this.props.dataSourceId || prevProps.dataSourceLabel !== this.props.dataSourceLabel) {
         this.props.history.replace({
           search: queryString.stringify({
-            dataSourceId: nextProps.dataSourceId,
-            dataSourceLabel: nextProps.dataSourceLabel,
+            dataSourceId: this.props.dataSourceId,
+            dataSourceLabel: this.props.dataSourceLabel,
           }),
         });
       }

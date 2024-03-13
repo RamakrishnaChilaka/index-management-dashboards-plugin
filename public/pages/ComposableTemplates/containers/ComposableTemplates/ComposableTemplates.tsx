@@ -104,14 +104,17 @@ class ComposableTemplates extends Component<ComposableTemplatesProps, Composable
 
   getComposableTemplates: () => Promise<void> | undefined;
 
-  componentWillReceiveProps(nextProps: Readonly<ComposableTemplatesProps>) {
-    this.setState({
-      dataSourceId: nextProps.dataSourceId,
-      dataSourceLabel: nextProps.dataSourceLabel,
-    });
+  static getDerivedStateFromProps(nextProps: ComposableTemplatesProps, prevState: ComposableTemplatesState) {
+    if (nextProps.dataSourceId != prevState.dataSourceId || nextProps.dataSourceLabel != prevState.dataSourceLabel) {
+      return {
+        dataSourceId: nextProps.dataSourceId,
+        dataSourceLabel: nextProps.dataSourceLabel,
+      };
+    }
+    return null;
   }
 
-  async componentDidUpdate(prevProps: TemplatesProps, prevState: TemplatesState) {
+  async componentDidUpdate(prevProps: ComposableTemplatesProps, prevState: ComposableTemplatesState) {
     const prevQuery = this.getQueryState(prevState);
     const currQuery = this.getQueryState(this.state);
     if (!_.isEqual(prevQuery, currQuery)) {

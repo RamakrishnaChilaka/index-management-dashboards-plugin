@@ -173,11 +173,14 @@ class Aliases extends Component<AliasesProps, AliasesState> {
     }, {} as AliasesState);
   };
 
-  componentWillReceiveProps(nextProps: Readonly<AliasesProps>) {
-    this.setState({
-      dataSourceId: nextProps.dataSourceId,
-      dataSourceLabel: nextProps.dataSourceLabel,
-    });
+  static getDerivedStateFromProps(nextProps: AliasesProps, prevState: AliasesState) {
+    if (nextProps.dataSourceId != prevState.dataSourceId || nextProps.dataSourceLabel != prevState.dataSourceLabel) {
+      return {
+        dataSourceId: nextProps.dataSourceId,
+        dataSourceLabel: nextProps.dataSourceLabel,
+      };
+    }
+    return null;
   }
 
   async componentDidUpdate(prevProps: AliasesProps, prevState: AliasesState) {

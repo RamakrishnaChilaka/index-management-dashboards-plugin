@@ -105,11 +105,14 @@ export class Indices extends Component<IndicesProps, IndicesState> {
     this.getIndices = _.debounce(this.getIndices, 500, { leading: true });
   }
 
-  componentWillReceiveProps(nextProps: Readonly<IndicesProps>) {
-    this.setState({
-      dataSourceId: nextProps.dataSourceId,
-      dataSourceLabel: nextProps.dataSourceLabel,
-    });
+  static getDerivedStateFromProps(nextProps: IndicesProps, prevState: IndicesState) {
+    if (nextProps.dataSourceId != prevState.dataSourceId || nextProps.dataSourceLabel != prevState.dataSourceLabel) {
+      return {
+        dataSourceId: nextProps.dataSourceId,
+        dataSourceLabel: nextProps.dataSourceLabel,
+      };
+    }
+    return null;
   }
 
   async componentDidMount() {

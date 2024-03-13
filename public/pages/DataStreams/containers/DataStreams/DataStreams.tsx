@@ -102,11 +102,14 @@ class DataStreams extends Component<DataStreamsProps, DataStreamsState> {
     this.getDataStreams = debounce(this.getDataStreams, 500, { leading: true });
   }
 
-  componentWillReceiveProps(nextProps: Readonly<DataStreamsProps>) {
-    this.setState({
-      dataSourceId: nextProps.dataSourceId,
-      dataSourceLabel: nextProps.dataSourceLabel,
-    });
+  static getDerivedStateFromProps(nextProps: DataStreamsProps, prevState: DataStreamsState) {
+    if (nextProps.dataSourceId != prevState.dataSourceId || nextProps.dataSourceLabel != prevState.dataSourceLabel) {
+      return {
+        dataSourceId: nextProps.dataSourceId,
+        dataSourceLabel: nextProps.dataSourceLabel,
+      };
+    }
+    return null;
   }
 
   async componentDidUpdate(prevProps: DataStreamsProps, prevState: DataStreamsState) {
