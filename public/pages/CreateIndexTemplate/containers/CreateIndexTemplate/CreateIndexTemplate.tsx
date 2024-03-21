@@ -3,16 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { Component } from "react";
+import React, { Component, useContext } from "react";
 import { RouteComponentProps } from "react-router-dom";
 import { isEqual } from "lodash";
 import TemplateDetail from "../TemplateDetail";
 import { BREADCRUMBS, ROUTES } from "../../../../utils/constants";
 import { CoreServicesContext } from "../../../../components/core_services";
+import { DataSourceMenuContext, DataSourceMenuProperties } from "../../../../services/DataSourceMenuContext";
+import { useUpdateUrlWithDataSourceProperties } from "../../../../components/MDSEnabledComponent";
 
-interface CreateIndexTemplateProps extends RouteComponentProps<{ template?: string; mode?: string }> {}
+interface CreateIndexTemplateProps extends RouteComponentProps<{ template?: string; mode?: string }>, DataSourceMenuProperties {}
 
-export default class CreateIndexTemplate extends Component<CreateIndexTemplateProps> {
+class CreateIndexTemplate extends Component<CreateIndexTemplateProps> {
   static contextType = CoreServicesContext;
 
   get template() {
@@ -65,8 +67,15 @@ export default class CreateIndexTemplate extends Component<CreateIndexTemplatePr
           templateName={this.template}
           onCancel={this.onCancel}
           onSubmitSuccess={() => this.props.history.push(ROUTES.TEMPLATES)}
+          dataSourceId={this.props.dataSourceId}
         />
       </div>
     );
   }
+}
+
+export default function (props: CreateIndexTemplateProps) {
+  const dataSourceMenuProps = useContext(DataSourceMenuContext);
+  useUpdateUrlWithDataSourceProperties();
+  return <CreateIndexTemplate {...props} {...dataSourceMenuProps} />;
 }
